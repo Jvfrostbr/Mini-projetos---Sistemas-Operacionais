@@ -1,10 +1,9 @@
-package Parte1;
+package GerenciamentoProcessos_Parte1;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
 
 public class main {
     public static void main(String[] args) {

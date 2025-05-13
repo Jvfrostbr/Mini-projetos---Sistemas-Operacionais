@@ -1,18 +1,14 @@
-package Parte2;
+package GerenciamentoProcessos_Parte2;
 
 public class Processo extends Thread{
     private int ID;
     private String nome;
     private int prioridade;
-    private TipoProcesso tipoProcesso; // Tipo de processo (CPU-bound ou I/O-bound)
-    private int tempoCPU; // Tempo total de CPU
-    private int tempoRestante; // Tempo restante de CPU
+    private TipoProcesso tipoProcesso;  // Tipo de processo (CPU-bound ou I/O-bound)
+    private int tempoCPU;               // Tempo total de CPU
+    private int tempoRestante;          // Tempo restante de CPU
 
-    public enum TipoProcesso {
-        CPU_BOUND,
-        IO_BOUND
-    }
-
+    //CONSTRUTOR
     public Processo(int ID, String nome, int prioridade, TipoProcesso tipoProcesso, int tempoCPU) {
         this.ID = ID;
         this.nome = nome;
@@ -21,6 +17,7 @@ public class Processo extends Thread{
         this.tempoCPU = tempoCPU;
     }
 
+    // GETS AND SETS:
     public int getID() {
         return ID;
     }

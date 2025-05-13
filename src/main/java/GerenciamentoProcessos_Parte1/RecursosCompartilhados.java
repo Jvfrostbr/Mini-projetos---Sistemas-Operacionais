@@ -1,4 +1,4 @@
-package Parte1;
+package GerenciamentoProcessos_Parte1;
 
 import java.util.ArrayList;
 import java.util.concurrent.locks.Lock;
@@ -11,9 +11,12 @@ public class RecursosCompartilhados {
     private final Lock lockContador = new ReentrantLock();
     private final boolean usarLock;
 
+    //CONSTRUTOR
     public RecursosCompartilhados(boolean usarLock) {
         this.usarLock = usarLock;
     }
+
+    //MÉTODOS
     public void adicionar(int valor) {
         if (usarLock) {
             lockBuffer.lock();
@@ -43,6 +46,7 @@ public class RecursosCompartilhados {
         }
     }
 
+    //GETS AND SETS:
     public static int getContador() {
         return contador;
     }

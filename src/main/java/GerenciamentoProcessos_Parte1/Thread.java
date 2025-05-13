@@ -1,14 +1,16 @@
-package Parte1;
+package GerenciamentoProcessos_Parte1;
 
 public class Thread extends java.lang.Thread {
     int id;
     RecursosCompartilhados recursosCompartilhados;
 
+    //CONSTRUTOR:
     public Thread(int id, RecursosCompartilhados recursosCompartilhados) {
         this.id = id;
         this.recursosCompartilhados = recursosCompartilhados;
     }
 
+    //MÉTODOS
     @Override
     public void run() {
         try {
