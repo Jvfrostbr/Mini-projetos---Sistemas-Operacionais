@@ -5,16 +5,31 @@ public class Processo extends Thread{
     private String nome;
     private int prioridade;
     private TipoProcesso tipoProcesso;  // Tipo de processo (CPU-bound ou I/O-bound)
-    private int tempoCPU;               // Tempo total de CPU
+    private int tempoCPU = 0;               // Tempo total de CPU
     private int tempoRestante;          // Tempo restante de CPU
+    private int tempoChegada;           // Tempo de chegada do processo
 
     //CONSTRUTOR
-    public Processo(int ID, String nome, int prioridade, TipoProcesso tipoProcesso, int tempoCPU) {
+    public Processo(int ID, String nome, int prioridade, TipoProcesso tipoProcesso, int tempoChegada, int tempoRestante) {
         this.ID = ID;
         this.nome = nome;
         this.prioridade = prioridade;
         this.tipoProcesso = tipoProcesso;
-        this.tempoCPU = tempoCPU;
+        this.tempoRestante = tempoRestante;
+        this.tempoChegada = tempoChegada;
+    }
+
+    @Override
+    public String toString() {
+        return "Processo{" +
+                "ID=" + ID +
+                ", nome='" + nome + '\'' +
+                ", prioridade=" + prioridade +
+                ", tipoProcesso=" + tipoProcesso +
+                ", tempoCPU=" + tempoCPU +
+                ", tempoRestante=" + tempoRestante +
+                ", tempoChegada=" + tempoChegada +
+                '}';
     }
 
     // GETS AND SETS:
@@ -64,5 +79,13 @@ public class Processo extends Thread{
 
     public void setTempoRestante(int tempoRestante) {
         this.tempoRestante = tempoRestante;
+    }
+
+    public int getTempoChegada() {
+        return tempoChegada;
+    }
+
+    public void setTempoChegada(int tempoChegada) {
+        this.tempoChegada = tempoChegada;
     }
 }
