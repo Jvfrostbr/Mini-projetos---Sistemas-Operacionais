@@ -5,7 +5,7 @@ public class Processo extends Thread{
     private String nome;
     private int prioridade;
     private TipoProcesso tipoProcesso;  // Tipo de processo (CPU-bound ou I/O-bound)
-    private int tempoCPU = 0;               // Tempo total de CPU
+    private int tempoCPU = 0;           // Tempo total de CPU
     private int tempoRestante;          // Tempo restante de CPU
     private int tempoChegada;           // Tempo de chegada do processo
 
