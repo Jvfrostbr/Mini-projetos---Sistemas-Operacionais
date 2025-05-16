@@ -1,78 +1,168 @@
 package GerenciamentoProcessos_Parte2;
 
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
-
-import static java.lang.Thread.sleep;
+import java.util.*;
 
 public class Round_Robin implements Escalonador {
     private int quantum;
+    private int tempoTotal;
     private Processo processoAtual;
+    private List<Processo> processosNaoChegados;
     private Queue<Processo> processosReady;
     private List<Processo> processosTerminated;
-    private List<Processo> processosNaoChegados; // Processos que ainda não chegaram
-    private int tempoTotal;
-    private int tempoExecutado; // Rastreia quanto tempo do quantum já foi usado
 
-    // CONSTRUTOR
     public Round_Robin(int quantum, List<Processo> todosProcessos) {
         this.quantum = quantum;
+        this.tempoTotal = 0;
+        this.processosNaoChegados = new ArrayList<>(todosProcessos);
         this.processosReady = new LinkedList<>();
         this.processosTerminated = new ArrayList<>();
-        this.processosNaoChegados = new ArrayList<>(todosProcessos);
-        this.processosNaoChegados.sort((p1, p2) -> p1.getTempoChegada() - p2.getTempoChegada()); // Ordena por tempo de chegada
-        this.tempoTotal = 0;
-        this.tempoExecutado = 0;
     }
 
     @Override
     public void adicionarProcesso(Processo processo) {
-        processosReady.add(processo);
+        processosNaoChegados.add(processo);
     }
 
     @Override
-    public void executarProcessos() {
-        while (!processosReady.isEmpty() || !processosNaoChegados.isEmpty() || processoAtual != null) {
-            // Adiciona processos que chegaram no tempo atual
-            while (!processosNaoChegados.isEmpty() && processosNaoChegados.get(0).getTempoChegada() <= tempoTotal) {
-                Processo p = processosNaoChegados.remove(0);
-                processosReady.add(p);
+    public void executarProcessos() throws InterruptedException {
+        while (!processosNaoChegados.isEmpty() || !processosReady.isEmpty() || processoAtual != null) {
+            // Mover processos que chegaram para a fila de prontos
+            Iterator<Processo> iterator = processosNaoChegados.iterator();
+            while (iterator.hasNext()) {
+                Processo p = iterator.next();
+                if (p.getTempoChegada() <= tempoTotal) {
+                    p.start();
+                    p.setStatus(StatusProcesso.PRONTO);
+                    processosReady.add(p);
+                    iterator.remove();
+                }
             }
 
-            // Seleciona o próximo processo se não houver um em execução
             if (processoAtual == null && !processosReady.isEmpty()) {
                 processoAtual = processosReady.poll();
-                tempoExecutado = 0; // Reinicia o contador do quantum
+                processoAtual.permitirExecucao();
+                processoAtual.setStatus(StatusProcesso.EXECUTANDO);
+                mostrarInformacoes();
             }
 
-            // Executa uma unidade de tempo do processo atual
             if (processoAtual != null) {
-                processoAtual.setTempoRestante(processoAtual.getTempoRestante() - 1);
-                tempoExecutado++;
-                tempoTotal++;
+                int tempoExecucao = Math.min(quantum, processoAtual.getTempoRestante());
+                tempoTotal += tempoExecucao;
+                processosReady.stream().forEach(p -> p.setTempoEspera(p.getTempoEspera() + 1));
 
-                // Verifica se o processo terminou ou esgotou o quantum
-                if (processoAtual.getTempoRestante() == 0) {
+                processoAtual.setTempoRestante(processoAtual.getTempoRestante() - tempoExecucao);
+                processoAtual.setTempoCPU(processoAtual.getTempoCPU() + tempoExecucao);
+
+                Thread.sleep(tempoExecucao * 1000); // Simula execução
+                processoAtual.pausarExecucao();
+
+                if (processoAtual.getTempoRestante() <= 0) {
+                    processoAtual.setStatus(StatusProcesso.FINALIZADO);
                     processosTerminated.add(processoAtual);
-                    processoAtual = null;
-                } else if (tempoExecutado >= quantum) {
-                    processosReady.add(processoAtual); // Reinsere na fila
-                    processoAtual = null;
+                    processoAtual.setTempoTurnAround(tempoTotal);
+                } else {
+                    processoAtual.setStatus(StatusProcesso.ESPERANDO);
+                    processosReady.add(processoAtual);
                 }
+
+                processoAtual = null;
             } else {
-                // Avança o tempo se não houver processos prontos
-                tempoTotal++;
+                Thread.sleep(100); // Espera se não há processo pronto
+                tempoTotal += 1;
             }
         }
     }
+
     @Override
     public void mostrarInformacoes() {
-        System.out.println("Processos terminados:");
-        for (Processo processo : processosTerminated) {
-            System.out.println("ID: " + processo.getID() + ", Nome: " + processo.getNome() + ", Tempo total: " + processo.getTempoCPU());
+        System.out.print("\033[H\033[2J"); // Limpa o terminal (melhor visualizar no CMD)
+        System.out.flush();
+
+        System.out.println("Simulador - Round Robin | Quantum: " + quantum);
+        System.out.println("Tempo total de simulação: " + tempoTotal + "s");
+        System.out.println();
+
+        System.out.printf("%-5s %-12s %-10s %-12s %-15s %-15s %-15s %-10s%n",
+                "PID", "NOME", "PRIORIDADE", "STATUS", "TEMPO RESTANTE", "TEMPO CPU", "CHEGADA", "TIPO");
+
+        List<Processo> todos = new ArrayList<>();
+        todos.addAll(processosNaoChegados);
+        todos.addAll(processosReady);
+        todos.addAll(processosTerminated);
+        if (processoAtual != null && !todos.contains(processoAtual)) {
+            todos.add(processoAtual);
         }
-        System.out.println("Tempo total de execução: " + tempoTotal);
+
+        for (Processo p : todos) {
+            System.out.printf("%-5d %-12s %-10d %-12s %-15d %-15d %-15d %-10s%n",
+                    p.getID(),
+                    p.getNome(),
+                    p.getPrioridade(),
+                    p.getStatus().name(),
+                    p.getTempoRestante(),
+                    p.getTempoCPU(),
+                    p.getTempoChegada(),
+                    p.isIoBound() ? "I/O Bound" : "CPU Bound"
+            );
+        }
+    }
+
+
+    public int getQuantum() {
+        return quantum;
+    }
+
+    public void setQuantum(int quantum) {
+        this.quantum = quantum;
+    }
+
+    public int getTempoTotal() {
+        return tempoTotal;
+    }
+
+    public void setTempoTotal(int tempoTotal) {
+        this.tempoTotal = tempoTotal;
+    }
+
+    public Processo getProcessoAtual() {
+        return processoAtual;
+    }
+
+    public void setProcessoAtual(Processo processoAtual) {
+        this.processoAtual = processoAtual;
+    }
+
+    public List<Processo> getProcessosNaoChegados() {
+        return processosNaoChegados;
+    }
+    @Override
+    public void setProcessosNaoChegados(List<Processo> processosNaoChegados) {
+        this.processosNaoChegados = processosNaoChegados;
+    }
+
+    public Queue<Processo> getProcessosReady() {
+        return processosReady;
+    }
+
+    public void setProcessosReady(Queue<Processo> processosReady) {
+        this.processosReady = processosReady;
+    }
+
+    public List<Processo> getProcessosTerminated() {
+        return processosTerminated;
+    }
+
+    public void setProcessosTerminated(List<Processo> processosTerminated) {
+        this.processosTerminated = processosTerminated;
+    }
+
+    @Override
+    public void run() {
+        try {
+            executarProcessos();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            System.out.println("Execução interrompida.");
+        }
     }
 }
