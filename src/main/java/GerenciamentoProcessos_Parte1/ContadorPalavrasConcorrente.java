@@ -16,6 +16,8 @@ public class ContadorPalavrasConcorrente {
     public final Mutex lockTextoCompleto;
     public final Mutex lockMapa;
 
+    public static String caminhoArquivo = "prática - gerenciamento de processos/src/main/java/GerenciamentoProcessos_Parte1/biblia-em-txt.txt";
+
     // CONSTRUTOR
     private ContadorPalavrasConcorrente() {
         this.lockPalavras = new Mutex();
@@ -33,8 +35,6 @@ public class ContadorPalavrasConcorrente {
         }
         return instancia;
     }
-
-    public static String caminhoArquivo = "biblia-em-txt.txt";
 
     //MÉTODOS:
     public static void main(String[] args) {
@@ -59,7 +59,7 @@ public class ContadorPalavrasConcorrente {
             while ((linha = leitor.readLine()) != null) {
 
                 linha = linha.toLowerCase();    // Converte a linha para minúsculas
-                linha = linha.replaceAll("[^a-záàâãéêíóôõúç ]", " ");  // Remove caracteres que não são letras ou espaços, mantendo apenas letras e caracteres especiais do português
+                linha = linha.replaceAll("[^a-záàâãéêíóôõúç-]", " ");  // Remove caracteres que não são letras ou espaços, mantendo apenas letras e caracteres especiais do português
                 String[] palavras = linha.split("\\s+");  // Divide a linha em palavras, separando por espaços
                 contadorPalavrasConcorrente.bufferTextoCompleto.addAll(Arrays.asList(palavras));  // Adiciona todas as palavras do .txt
 
