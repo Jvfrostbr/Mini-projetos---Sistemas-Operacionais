@@ -50,18 +50,18 @@ public class Preemption_Priority implements Escalonador {
                         processosReady.add(processoAtual);
                         processoAtual.setStatus(StatusProcesso.ESPERANDO);
                         processoAtual = processosReady.poll();
-                        processoAtual.setStatus(StatusProcesso.EXECUTANDO);
                     }
                 }
             }
 
             if (processoAtual != null) {
+                processoAtual.setStatus(StatusProcesso.EXECUTANDO);
                 // Executa o processo atual por 1 unidade de tempo
                 processoAtual.permitirExecucao();
                 processoAtual.setTempoRestante(processoAtual.getTempoRestante() - 1);
                 processoAtual.setTempoCPU(processoAtual.getTempoCPU() + 1);
 
-                processosReady.stream().forEach(p -> p.setTempoEspera(p.getTempoEspera() + 1));
+                processosReady.forEach(p -> p.setTempoEspera(p.getTempoEspera() + 1));
 
                 mostrarInformacoes();
 
@@ -78,18 +78,8 @@ public class Preemption_Priority implements Escalonador {
                     processoAtual.setStatus(StatusProcesso.FINALIZADO);
                     processosTerminated.add(processoAtual);
                     processoAtual.setTempoTurnAround(tempoTotal);
-                    processoAtual = null;
-                }
-            } else {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    System.out.println("Execução interrompida.");
-                    break;
                 }
             }
-
             tempoTotal++;
         }
     }

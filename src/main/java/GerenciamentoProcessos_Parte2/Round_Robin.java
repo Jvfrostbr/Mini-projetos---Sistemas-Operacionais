@@ -48,12 +48,12 @@ public class Round_Robin implements Escalonador {
             if (processoAtual != null) {
                 int tempoExecucao = Math.min(quantum, processoAtual.getTempoRestante());
                 tempoTotal += tempoExecucao;
-                processosReady.stream().forEach(p -> p.setTempoEspera(p.getTempoEspera() + 1));
+                processosReady.forEach(p -> p.setTempoEspera(p.getTempoEspera() + 1));
 
                 processoAtual.setTempoRestante(processoAtual.getTempoRestante() - tempoExecucao);
                 processoAtual.setTempoCPU(processoAtual.getTempoCPU() + tempoExecucao);
 
-                Thread.sleep(tempoExecucao * 1000); // Simula execução
+                Thread.sleep(tempoExecucao * 1000L); // Simula execução
                 processoAtual.pausarExecucao();
 
                 if (processoAtual.getTempoRestante() <= 0) {

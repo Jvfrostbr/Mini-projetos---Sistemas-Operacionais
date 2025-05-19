@@ -59,25 +59,20 @@ public class Shortest_Remaining_Time_First implements Escalonador {
 
             if (processoAtual != null) {
                 // Executa por 1 unidade de tempo (quantum fixo para SRTF)
-                tempoTotal += 1;
                 processoAtual.setTempoRestante(processoAtual.getTempoRestante() - 1);
                 processoAtual.setTempoCPU(processoAtual.getTempoCPU() + 1);
-                processosReady.stream().forEach(p -> p.setTempoEspera(p.getTempoEspera() + 1));
-                processoAtual.setTempoTurnAround(tempoTotal);
+                processosReady.forEach(p -> p.setTempoEspera(p.getTempoEspera() + 1));
 
                 Thread.sleep(1000); // Simula 1 segundo de execução
 
                 if (processoAtual.getTempoRestante() <= 0) {
+                    processoAtual.setTempoTurnAround(tempoTotal);
                     processoAtual.setStatus(StatusProcesso.FINALIZADO);
                     processoAtual.pausarExecucao();
                     processosTerminated.add(processoAtual);
-                    processoAtual = null;
                 }
-            } else {
-                // Nenhum processo para executar, avança o tempo
-                tempoTotal++;
-                Thread.sleep(100); // Pequena pausa para não consumir CPU inutilmente
             }
+            tempoTotal++;
         }
     }
 

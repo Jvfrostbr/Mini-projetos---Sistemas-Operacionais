@@ -4,7 +4,7 @@ public class Processo extends Thread {
     private int ID;
     private String nome;
     private int prioridade;
-    private boolean ioBound = false;
+    private boolean ioBound;
     private StatusProcesso status;
     private int tempoCPU = 0;
     private int tempoRestante;
