@@ -22,7 +22,7 @@ public class Simulador extends Thread {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         Scanner scanner = new Scanner(System.in);
         boolean continuar = true;
 
@@ -91,7 +91,7 @@ public class Simulador extends Thread {
                         System.out.println("Escolha um algoritmo de escalonamento primeiro.");
                     } else {
                         escalonador.setProcessosNaoChegados(listaProcessosInicial);
-                        escalonador.run();
+                        escalonador.executarProcessos();
                         escalonador.mostrarInformacoes();
                         double mediaTurnAround = 0;
                         double mediaEspera = 0;
@@ -104,11 +104,14 @@ public class Simulador extends Thread {
                         System.out.printf("%-30s: %.2f | %-30s: %.2f%n", "Tempo médio de Turnaround", mediaTurnAround, "Tempo médio de Espera", mediaEspera);
 
                     }
+                    resetarProcessos();
+                    System.out.println("Simulação finalizada. Processos resetados.");
                     break;
                 case 5:
                     carregarProcessosTeste();
                     System.out.println("Processos de teste carregados.");
                     break;
+
                 case 6:
                     continuar = false;
                     System.out.println("Encerrando o simulador...");
@@ -130,7 +133,7 @@ public class Simulador extends Thread {
         System.out.print("O processo é do tipo (1) CPU ou (2) IO? ");
         boolean tipo = scanner.nextInt() != 1;
 
-        System.out.print("Digite o tempo de execução (em milisegundos): ");
+        System.out.print("Digite o tempo de execução (em segundos): ");
         int tempoCPU = scanner.nextInt();
 
         System.out.print("Digite o tempo de chegada: ");
@@ -146,6 +149,13 @@ public class Simulador extends Thread {
         listaProcessosInicial.add(new Processo(3, "P3", 20, 8, 4, true));
         listaProcessosInicial.add(new Processo(4, "P4", 5, 4, 6, false));
         listaProcessosInicial.add(new Processo(5, "P5", 30, 2, 1, true));
+        listaProcessosInicial.add(new Processo(6, "P6", 25, 7, 3, false));
+        listaProcessosInicial.add(new Processo(7, "P7", 12, 6, 5, false));
+    }
+
+    public static void resetarProcessos() {
+        listaProcessosInicial.clear();
+        contadorID = 1;
     }
 
 }
