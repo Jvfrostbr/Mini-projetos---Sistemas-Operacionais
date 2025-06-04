@@ -56,16 +56,24 @@ public class AlocacaoMemoria {
     }
 
     public void compactacao() {
-        int indiceLivre = 0; // Posição onde o próximo processo será alocado
+        int indiceLivre = 0;
         for (int i = 0; i < memoria.length; i++) {
             if (memoria[i] != null) {
-                // Move o processo para a posição livre
-                memoria[indiceLivre] = memoria[i];
-                memoria[i] = null; // Libera a posição original
-                indiceLivre++;
+                Processo processo = memoria[i];
+                if (indiceLivre != i) {
+                    // Move o processo e atualiza o espacoInicial apenas na primeira célula do bloco
+                    for (int j = 0; j < processo.getTamanho(); j++) {
+                        memoria[indiceLivre + j] = processo;
+                        memoria[i + j] = null;
+                    }
+                    processo.setEspacoInicial(indiceLivre);
+                    i += processo.getTamanho() - 1;
+                    indiceLivre += processo.getTamanho();
+                } else {
+                    indiceLivre++;
+                }
             }
         }
-        // Preenche o restante da memória com null
         for (int i = indiceLivre; i < memoria.length; i++) {
             memoria[i] = null;
         }
@@ -126,9 +134,10 @@ class Processo {
     private int tempoEspera;
     private int espacoInicial;
 
-    public Processo(String nome, int tamanho) {
+    public Processo(String nome, int tamanho, int tempoEspera) {
         this.nome = nome;
         this.tamanho = tamanho;
+        this.tempoEspera = tempoEspera;
     }
 
     public String getNome() {
@@ -163,14 +172,14 @@ class main {
         AlocacaoMemoria alocacao = new AlocacaoMemoria(10);
         alocacao.processosAlocados = new ArrayList<>();
 
-        Processo p1 = new Processo("P1", 3);
-        Processo p2 = new Processo("P2", 4);
-        Processo p3 = new Processo("P3", 4);
+        for (int i = 1; i <= 10; i++) {
+            String nome = "P" + i;
+            int tamanho = new Random().nextInt(7) + 1; // tamanho entre 1 e 8
+            int tempoEspera = new Random().nextInt(11); // tempoEspera entre 0 e 10
 
-        alocacao.adicionarProcessoFila(p1);
-        alocacao.adicionarProcessoFila(p2);
-        alocacao.adicionarProcessoFila(p3);
-
+            Processo processo = new Processo(nome, tamanho, tempoEspera);
+            alocacao.adicionarProcessoFila(processo);
+        }
         alocacao.processarFila();
     }
 }
