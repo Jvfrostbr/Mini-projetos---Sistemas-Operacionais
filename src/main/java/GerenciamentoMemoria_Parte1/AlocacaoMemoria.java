@@ -1,6 +1,5 @@
 package GerenciamentoMemoria_Parte1;
 
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.PriorityQueue;
@@ -124,62 +123,5 @@ public class AlocacaoMemoria {
             System.out.print(p == null ? "[ ]" : "[" + p.getNome() + "]");
         }
         System.out.println();
-    }
-
-}
-
-class Processo {
-    private String nome;
-    private int tamanho;
-    private int tempoEspera;
-    private int espacoInicial;
-
-    public Processo(String nome, int tamanho, int tempoEspera) {
-        this.nome = nome;
-        this.tamanho = tamanho;
-        this.tempoEspera = tempoEspera;
-    }
-
-    public String getNome() {
-        return nome;
-    }
-
-    public int getTamanho() {
-        return tamanho;
-    }
-
-    public int getTempoEspera() {
-        return tempoEspera;
-    }
-    public void setTempoEspera(int tempoEspera) {
-        this.tempoEspera = tempoEspera;
-    }
-    public int getEspacoInicial() {
-        return espacoInicial;
-    }
-    public void setEspacoInicial(int espacoInicial) {
-        this.espacoInicial = espacoInicial;
-    }
-
-    @Override
-    public String toString() {
-        return "Processo{" + "nome=" + nome + ", tamanho=" + tamanho + '}';
-    }
-}
-
-class main {
-    public static void main(String[] args) {
-        AlocacaoMemoria alocacao = new AlocacaoMemoria(10);
-        alocacao.processosAlocados = new ArrayList<>();
-
-        for (int i = 1; i <= 10; i++) {
-            String nome = "P" + i;
-            int tamanho = new Random().nextInt(7) + 1; // tamanho entre 1 e 8
-            int tempoEspera = new Random().nextInt(11); // tempoEspera entre 0 e 10
-
-            Processo processo = new Processo(nome, tamanho, tempoEspera);
-            alocacao.adicionarProcessoFila(processo);
-        }
-        alocacao.processarFila();
     }
 }
