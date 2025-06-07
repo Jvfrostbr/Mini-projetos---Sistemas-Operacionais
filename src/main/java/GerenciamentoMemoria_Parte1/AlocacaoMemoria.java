@@ -11,15 +11,28 @@ public class AlocacaoMemoria {
     ArrayList<Processo> processosAlocados;
     Queue<Processo> filaProcessos;
     ArrayList<Processo> processosSwapped;
+    private String estrategia;//first, best ou worst
 
-    public AlocacaoMemoria(int tamanhoMemoria) {
+    public AlocacaoMemoria(int tamanhoMemoria, String estrategia) {
         this.memoria = new Processo[tamanhoMemoria];
         this.filaProcessos = new PriorityQueue<Processo>(Comparator.comparingInt(Processo::getTempoEspera));
         this.processosSwapped = new ArrayList<Processo>();
         this.processosAlocados = new ArrayList<>();
+        this.estrategia = estrategia.toLowerCase();
+
     }
 
-    public boolean alocarProcesso(Processo processo) {
+    public boolean alocarProcesso(Processo processo){
+        switch (estrategia) {
+            case "best":
+                return alocarProcessoBestFit(processo);
+            case "worst":
+                return alocarProcessoWorstFit(processo);
+            default:
+                return alocarProcessoFirstFit(processo);
+        }
+    }
+    public boolean alocarProcessoFirstFit(Processo processo) {
         int espacoDisponivel = 0;
         int inicioEspaco = -1;
 
@@ -44,6 +57,62 @@ public class AlocacaoMemoria {
             }
         }
         return false; // Não foi possível alocar o processo
+    }
+    private boolean alocarProcessoBestFit(Processo processo) {
+        int menorTamanho = memoria.length + 1;
+        int inicioMelhor = -1;
+        int espacosLivres = 0;
+        int inicioAtual = -1;
+        for (int i = 0; i <= memoria.length; i++) {
+            if (i < memoria.length && memoria[i] == null) {
+                if (inicioAtual < 0) inicioAtual = i;
+                espacosLivres++;
+            } else {
+                if (espacosLivres >= processo.getTamanho() && espacosLivres < menorTamanho) {
+                    menorTamanho = espacosLivres;
+                    inicioMelhor = inicioAtual;
+                }
+                espacosLivres = 0;
+                inicioAtual = -1;
+            }
+        }
+        if (inicioMelhor >= 0) {
+            for (int j = inicioMelhor; j < inicioMelhor + processo.getTamanho(); j++) {
+                memoria[j] = processo;
+            }
+            processo.setEspacoInicial(inicioMelhor);
+            processosAlocados.add(processo);
+            return true;
+        }
+        return false;
+    }
+    private boolean alocarProcessoWorstFit(Processo processo) {
+        int maiorTamanho = 0;
+        int inicioMaior = -1;
+        int espacosLivres = 0;
+        int inicioAtual = -1;
+        for (int i = 0; i <= memoria.length; i++) {
+            if (i < memoria.length && memoria[i] == null) {
+                if (inicioAtual < 0) inicioAtual = i;
+                espacosLivres++;
+            } else {
+                if (espacosLivres >= processo.getTamanho() && espacosLivres > maiorTamanho) {
+                    maiorTamanho = espacosLivres;
+                    inicioMaior = inicioAtual;
+                }
+                espacosLivres = 0;
+                inicioAtual = -1;
+            }
+        }
+        if (inicioMaior >= 0) {
+            for (int j = inicioMaior; j < inicioMaior + processo.getTamanho(); j++) {
+                memoria[j] = processo;
+            }
+            processo.setEspacoInicial(inicioMaior);
+            processosAlocados.add(processo);
+            return true;
+        }
+        return false;
     }
 
     public void desalocarProcesso(Processo processo) {
@@ -86,19 +155,19 @@ public class AlocacaoMemoria {
         while (!filaProcessos.isEmpty()) {
             imprimirMemoria(); // Imprime o estado atual da memória
             Processo processo = filaProcessos.poll();
-            if (alocarProcesso(processo)) {
+            if (alocarProcessoFirstFit(processo)) {
                 System.out.println("Processo " + processo.getNome() + " alocado com sucesso.");
             } else {
                 System.out.println("Memória insuficiente para alocar o processo " + processo.getNome());
                 System.out.println("Compactando memória...");
                 compactacao();
-                if (alocarProcesso(processo)) {
+                if (alocarProcessoFirstFit(processo)) {
                     System.out.println("Processo " + processo.getNome() + " alocado após compactação.");
                 } else {
                     System.out.println("Ainda não foi possível alocar o processo " + processo.getNome() + ". Colocando na fila de swap.");
                     processosSwapped.add(processo);
                     swapProcessos(); // Tenta desalocar um processo para liberar espaço
-                    if (alocarProcesso(processo)) {
+                    if (alocarProcessoFirstFit(processo)) {
                         System.out.println("Processo " + processo.getNome() + " alocado após swap.");
                     } else {
                         System.out.println("Não foi possível alocar o processo " + processo.getNome() + " mesmo após swap.");
