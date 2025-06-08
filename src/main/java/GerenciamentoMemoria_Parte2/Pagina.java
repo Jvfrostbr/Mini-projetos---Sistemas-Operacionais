@@ -37,9 +37,4 @@ public class Pagina {
     public long getLastUsedTime() {
         return ultimoTempoUsado;
     }
-
-    public void setBitReferencia(boolean bit) {
-        this.bitUso = bit;
-    }
-
 }

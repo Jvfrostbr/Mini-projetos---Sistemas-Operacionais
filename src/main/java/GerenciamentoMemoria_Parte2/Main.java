@@ -59,13 +59,13 @@ public class Main {
             tamPagina = scanner.nextInt();
             scanner.nextLine();
 
-            if(tamFisica > tamVirtual){
+            if(tamFisica >= tamVirtual){
                 System.out.println("Você digitou um valor de memória virtual menor que a física, tente novamente");
-            } else if (tamFisica < tamPagina) {
+            } else if (tamFisica <= tamPagina) {
                 System.out.println("Você digitou um valor de mómória de pagina maior que a memória física, tente novamente ");
             }
 
-        } while (tamFisica > tamVirtual || tamPagina > tamFisica);
+        } while (tamFisica >= tamVirtual || tamPagina >= tamFisica);
 
         System.out.println("Defina a quantidade limite de páginas por processo a serem alocadas inicialmente na memória física: ");
         limiteFisicasPorProcesso = scanner.nextInt();
