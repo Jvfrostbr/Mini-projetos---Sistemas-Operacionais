@@ -143,6 +143,14 @@ public class AlocacaoMemoria {
         }
     }
 
+    public Processo swapProcessos() {
+        int escolha = new Random().nextInt(processosAlocados.size());
+        Processo processoASwap = processosAlocados.get(escolha);
+        desalocarProcesso(processoASwap);
+        processosSwapped.add(processoASwap);
+        return processoASwap;
+    }
+
     public void adicionarProcessoFila(Processo processo) {
         filaProcessos.add(processo);
     }
@@ -159,16 +167,15 @@ public class AlocacaoMemoria {
                 imprimirMemoriaFormatada();
             } else {
                 imprimirMensagens(Arrays.asList("Memória insuficiente para alocar o " + processo + ".", "Compactando memória..."), processo);
-                imprimirMemoriaFormatada();
                 compactacao();
+                imprimirMemoriaFormatada();
                 if (alocarProcesso(processo)) {
                     imprimirMensagens(Arrays.asList(processo + " alocado após compactação."), processo);
                     imprimirMemoriaFormatada();
                 } else {
                     imprimirMensagens(Arrays.asList("Ainda não foi possível alocar o " + processo, "Aplicando Swap..." ), processo);
-                    imprimirMemoriaFormatada();
-                    processosSwapped.add(processo);
                     Processo processoASwap = swapProcessos(); // Tenta desalocar um processo para liberar espaço
+                    imprimirMemoriaFormatada();
                     if (alocarProcesso(processo)) {
                         imprimirMensagens(Arrays.asList(processo + " alocado após swap.", processoASwap + " foi desalocado."), processo);
                         imprimirMemoriaFormatada();
@@ -181,14 +188,6 @@ public class AlocacaoMemoria {
         }
         imprimirMensagens(Arrays.asList("Estado final da memória após processar todos os processos na fila."), null);
         imprimirMemoriaFormatada();
-    }
-
-    public Processo swapProcessos() {
-        int escolha = new Random().nextInt(processosAlocados.size());
-        Processo processoASwap = processosAlocados.get(escolha);
-        desalocarProcesso(processoASwap);
-        processosSwapped.add(processoASwap);
-        return processoASwap;
     }
 
     public void imprimirMensagens(List<String> mensagens, Processo processo) {
