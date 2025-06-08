@@ -1,16 +1,18 @@
 package GerenciamentoMemoria_Parte1;
 
 public class Processo {
+    private static int proximoId = 1;
     private String nome;
     private int tamanho;
-    private int tempoEspera;
     private int espacoInicial;
+    private int ID;
 
     //CONSTRUTOR
-    public Processo(String nome, int tamanho, int tempoEspera) {
+    public Processo(String nome, int tamanho) {
         this.nome = nome;
         this.tamanho = tamanho;
-        this.tempoEspera = tempoEspera;
+        this.espacoInicial = -1; // Inicialmente não alocado
+        this.ID = proximoId++;
     }
 
     //GETS AND SETS:
@@ -19,12 +21,6 @@ public class Processo {
     }
     public int getTamanho() {
         return tamanho;
-    }
-    public int getTempoEspera() {
-        return tempoEspera;
-    }
-    public void setTempoEspera(int tempoEspera) {
-        this.tempoEspera = tempoEspera;
     }
     public int getEspacoInicial() {
         return espacoInicial;
@@ -35,6 +31,6 @@ public class Processo {
 
     @Override
     public String toString() {
-        return "Processo{" + "nome=" + nome + ", tamanho=" + tamanho + '}';
+        return "Processo " + nome + " (ID: " + ID + "| Tamanho:" + tamanho + "MB )";
     }
 }

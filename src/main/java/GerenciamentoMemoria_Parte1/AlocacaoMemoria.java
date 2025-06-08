@@ -1,37 +1,31 @@
 package GerenciamentoMemoria_Parte1;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.PriorityQueue;
-import java.util.Queue;
-import java.util.Random;
+import java.util.*;
 
 public class AlocacaoMemoria {
     Processo[] memoria;
     ArrayList<Processo> processosAlocados;
     Queue<Processo> filaProcessos;
     ArrayList<Processo> processosSwapped;
-    private String estrategia;//first, best ou worst
+    private final Estrategia estrategia; //First, Best ou Worst-fit
 
-    public AlocacaoMemoria(int tamanhoMemoria, String estrategia) {
+    public AlocacaoMemoria(int tamanhoMemoria, Estrategia estrategia) {
         this.memoria = new Processo[tamanhoMemoria];
-        this.filaProcessos = new PriorityQueue<Processo>(Comparator.comparingInt(Processo::getTempoEspera));
-        this.processosSwapped = new ArrayList<Processo>();
+        this.filaProcessos = new LinkedList<>();
+        this.processosSwapped = new ArrayList<>();
         this.processosAlocados = new ArrayList<>();
-        this.estrategia = estrategia.toLowerCase();
+        this.estrategia = estrategia;
 
     }
 
     public boolean alocarProcesso(Processo processo){
-        switch (estrategia) {
-            case "best":
-                return alocarProcessoBestFit(processo);
-            case "worst":
-                return alocarProcessoWorstFit(processo);
-            default:
-                return alocarProcessoFirstFit(processo);
-        }
+        return switch (estrategia) {
+            case Estrategia.BEST_FIT -> alocarProcessoBestFit(processo);
+            case Estrategia.WORST_FIT -> alocarProcessoWorstFit(processo);
+            default -> alocarProcessoFirstFit(processo);
+        };
     }
+
     public boolean alocarProcessoFirstFit(Processo processo) {
         int espacoDisponivel = 0;
         int inicioEspaco = -1;
@@ -58,6 +52,7 @@ public class AlocacaoMemoria {
         }
         return false; // Não foi possível alocar o processo
     }
+
     private boolean alocarProcessoBestFit(Processo processo) {
         int menorTamanho = memoria.length + 1;
         int inicioMelhor = -1;
@@ -86,6 +81,7 @@ public class AlocacaoMemoria {
         }
         return false;
     }
+
     private boolean alocarProcessoWorstFit(Processo processo) {
         int maiorTamanho = 0;
         int inicioMaior = -1;
@@ -152,45 +148,69 @@ public class AlocacaoMemoria {
     }
 
     public void processarFila() {
+        System.out.println("Iniciando processamento da fila de processos.");
+        imprimirMemoriaFormatada();
         while (!filaProcessos.isEmpty()) {
-            imprimirMemoria(); // Imprime o estado atual da memória
             Processo processo = filaProcessos.poll();
-            if (alocarProcessoFirstFit(processo)) {
-                System.out.println("Processo " + processo.getNome() + " alocado com sucesso.");
+            imprimirMensagens(Arrays.asList("Processando " + processo.getNome() + " com tamanho " + processo.getTamanho() + "."), processo);
+            if (alocarProcesso(processo)) {
+                assert processo != null;
+                imprimirMensagens(Arrays.asList( processo + " alocado com sucesso."), processo);
+                imprimirMemoriaFormatada();
             } else {
-                System.out.println("Memória insuficiente para alocar o processo " + processo.getNome());
-                System.out.println("Compactando memória...");
+                imprimirMensagens(Arrays.asList("Memória insuficiente para alocar o " + processo + ".", "Compactando memória..."), processo);
+                imprimirMemoriaFormatada();
                 compactacao();
-                if (alocarProcessoFirstFit(processo)) {
-                    System.out.println("Processo " + processo.getNome() + " alocado após compactação.");
+                if (alocarProcesso(processo)) {
+                    imprimirMensagens(Arrays.asList(processo + " alocado após compactação."), processo);
+                    imprimirMemoriaFormatada();
                 } else {
-                    System.out.println("Ainda não foi possível alocar o processo " + processo.getNome() + ". Colocando na fila de swap.");
+                    imprimirMensagens(Arrays.asList("Ainda não foi possível alocar o " + processo, "Aplicando Swap..." ), processo);
+                    imprimirMemoriaFormatada();
                     processosSwapped.add(processo);
-                    swapProcessos(); // Tenta desalocar um processo para liberar espaço
-                    if (alocarProcessoFirstFit(processo)) {
-                        System.out.println("Processo " + processo.getNome() + " alocado após swap.");
+                    Processo processoASwap = swapProcessos(); // Tenta desalocar um processo para liberar espaço
+                    if (alocarProcesso(processo)) {
+                        imprimirMensagens(Arrays.asList(processo + " alocado após swap.", processoASwap + " foi desalocado."), processo);
+                        imprimirMemoriaFormatada();
                     } else {
-                        System.out.println("Não foi possível alocar o processo " + processo.getNome() + " mesmo após swap.");
+                        imprimirMensagens(Arrays.asList("Não foi possível alocar o " + processo + " mesmo após swap.", processoASwap + " foi desalocado."), processo);
+                        imprimirMemoriaFormatada();
                     }
                 }
             }
         }
-        imprimirMemoria(); // Imprime o estado final da memória
+        imprimirMensagens(Arrays.asList("Estado final da memória após processar todos os processos na fila."), null);
+        imprimirMemoriaFormatada();
     }
 
-    public void swapProcessos() {
+    public Processo swapProcessos() {
         int escolha = new Random().nextInt(processosAlocados.size());
         Processo processoASwap = processosAlocados.get(escolha);
-        System.out.println("Desalocando processo " + processoASwap.getNome() + " para swap.");
         desalocarProcesso(processoASwap);
         processosSwapped.add(processoASwap);
+        return processoASwap;
     }
 
-    public void imprimirMemoria() {
-        System.out.print("Memória: ");
-        for (Processo p : memoria) {
-            System.out.print(p == null ? "[ ]" : "[" + p.getNome() + "]");
+    public void imprimirMensagens(List<String> mensagens, Processo processo) {
+        if (processo == null) {
+            System.out.println("=".repeat(30) + " Memória em execução " + "=".repeat(30));
+        } else {
+            System.out.println("=".repeat(23) + processo + " em execução " + "=".repeat(23));
+        }
+        System.out.println("Informações de Execução:");
+        for (String msg : mensagens) {
+            System.out.println(">> " + msg);
         }
         System.out.println();
     }
+
+    public void imprimirMemoriaFormatada() {
+        System.out.print("Memória ( " + memoria.length + "MB ): ");
+        for (Processo p : memoria) {
+            String conteudo = p == null ? "   " : String.format("%-3s", p.getNome());
+            System.out.print("[" + conteudo + "]");
+        }
+        System.out.println("\n" + "=".repeat(80) + "\n");
+    }
+
 }
