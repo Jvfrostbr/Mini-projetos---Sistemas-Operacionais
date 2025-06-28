@@ -5,106 +5,153 @@ import java.util.*;
 public class SistemaArquivos {
 
     private final Map<String, Diretorio> diretorios;
-    private final AlocadorEncadeado alocador;
-    private final int tamanhoBlocoKB;
+    private final Alocador alocador;
+    private final int tamanhoBloco;
 
-    public SistemaArquivos(int memoriaTotalKB, int tamanhoBlocoKB) {
+    // Construtor:
+    public SistemaArquivos(int memoriaTotalKB, int tamanhoBloco, int tipoAlocador) {
         this.diretorios = new HashMap<>();
-        this.alocador = new AlocadorEncadeado(memoriaTotalKB, tamanhoBlocoKB);
-        this.tamanhoBlocoKB = tamanhoBlocoKB;
+        this.tamanhoBloco = tamanhoBloco;
+
+        if (tipoAlocador == 1) {
+            this.alocador = new AlocadorEncadeado(memoriaTotalKB, tamanhoBloco);
+        }
+        else  {
+            this.alocador = new AlocadorFAT();
+        }
     }
 
-    public void criarDiretorio(String nomeDir) {
-        if (diretorios.containsKey(nomeDir) || alocador.arquivoExiste(nomeDir)) {
-            System.out.printf("Erro: Já existe um arquivo ou diretório chamado '%s'.%n", nomeDir);
-            return;
+    // Métodos:
+    public void criarDiretorio(String nomeDiretorio) {
+        if (diretorios.containsKey(nomeDiretorio) || alocador.arquivoExiste(nomeDiretorio)) {
+            System.out.println("Erro: Já existe um arquivo ou diretório chamado " + nomeDiretorio);
         }
-        diretorios.put(nomeDir, new Diretorio(nomeDir));
-        System.out.printf("Diretório '%s' criado com sucesso.%n", nomeDir);
-        mostrarEstadoBlocos();
+        else {
+            int blocoDiretorio = alocador.alocarNoBloco(nomeDiretorio, tamanhoBloco);
+            if (blocoDiretorio == -1) {
+                System.out.println("Erro: Memória insuficiente para alocar diretório.");
+            }
+            else {
+                Diretorio novoDir = new Diretorio(nomeDiretorio, blocoDiretorio);
+                diretorios.put(nomeDiretorio, novoDir);
+                System.out.printf("Diretório '%s' criado no bloco %d.%n", nomeDiretorio, blocoDiretorio);
+                mostrarEstadoBlocos();
+            }
+        }
     }
 
-    public void excluirDiretorio(String nomeDir) {
-        Diretorio dir = diretorios.get(nomeDir);
-        if (dir == null) {
-            System.out.printf("Erro: Diretório '%s' não encontrado.%n", nomeDir);
-            return;
+    public void excluirDiretorio(String nomeDiretorio, Scanner scanner) {
+        Diretorio diretorio = diretorios.get(nomeDiretorio);
+
+        if (diretorio == null) {
+            System.out.println("Erro: Diretório " + nomeDiretorio + " não encontrado.");
         }
-        if (!dir.getArquivos().isEmpty()) {
-            System.out.printf("Erro: Diretório '%s' não está vazio.%n", nomeDir);
-            return;
+        else {
+            if (!diretorio.getArquivos().isEmpty()) {
+                System.out.printf("ATENÇÃO: O diretório " + nomeDiretorio + " contém arquivos\n" +
+                        "ao apagar o diretório todos os arquivos contidos nele também serão apagados\n" +
+                        "Deseja realmente apagar o diretório?\n" +
+                        "1 - Sim \n" +
+                        "2 - Não \n" +
+                        "Escolha uma opção: ");
+                int opcao = scanner.nextInt();
+
+                if (opcao == 1) {
+                    for (Arquivo arquivo : diretorio.getArquivos()) {
+                        alocador.desalocarBloco(arquivo.getNome());
+                        excluirArquivo(nomeDiretorio, arquivo.getNome());
+                    }
+                    alocador.desalocarBloco(nomeDiretorio);
+                    diretorios.remove(nomeDiretorio);
+                    System.out.printf("Diretório '%s' removido com sucesso.%n", nomeDiretorio);
+                    mostrarEstadoBlocos();
+                }
+                else {
+                    System.out.println("Operação cancelada.");
+                }
+            }
+            else {
+                alocador.desalocarBloco(nomeDiretorio);
+                diretorios.remove(nomeDiretorio);
+                System.out.printf("Diretório '%s' removido com sucesso.%n", nomeDiretorio);
+                mostrarEstadoBlocos();
+            }
         }
-        diretorios.remove(nomeDir);
-        System.out.printf("Diretório '%s' removido com sucesso.%n", nomeDir);
-        mostrarEstadoBlocos();
     }
 
-    public void criarArquivo(String nomeDir, String nomeArquivo, int tamanhoKB) {
-        Diretorio dir = diretorios.get(nomeDir);
-        if (dir == null) {
-            System.out.printf("Erro: Diretório '%s' inexistente.%n", nomeDir);
-            return;
+    public void criarArquivo(String nomeDir, String nomeArquivo, int tamanhoArquivoKB) {
+        Diretorio diretorio = diretorios.get(nomeDir);
+
+        if (diretorio == null) {
+            System.out.println("Erro: Diretório inesxistente");
         }
-//        if (dir.possuiArquivo(nomeArquivo) || diretorios.containsKey(nomeArquivo) || alocador.arquivoExiste(nomeArquivo)) {
-//            System.out.printf("Erro: Já existe um arquivo ou diretório chamado '%s'.%n", nomeArquivo);
-//            return;
-//        }
+        else if (diretorio.possuiArquivo(nomeArquivo) || diretorios.containsKey(nomeArquivo) || alocador.arquivoExiste(nomeArquivo)) {
+            System.out.println("Erro: Já existe um arquivo ou diretório chamado " + nomeArquivo);
+        }
+        else{
+            int blocoInicial = alocador.alocarNoBloco(nomeArquivo, tamanhoArquivoKB);
 
-        int blocoInicial = alocador.alocarArquivo(nomeArquivo, tamanhoKB);
-//        if (blocoInicial == -1) {
-//            int livres = alocador.contarBlocosLivres();
-//            int blocosNecessarios = (int) Math.ceil((double) tamanhoKB / tamanhoBlocoKB);
-//            if (livres >= blocosNecessarios) {
-//                System.out.println("Possível fragmentação externa: há blocos livres suficientes, mas não contíguos.");
-//            }
-//            return;
-//        }
+            // se blocoInicial == -1 → Alocação do arquivo falhou
+            if (blocoInicial == -1) {
+                int livres = alocador.contarBlocosLivres();
+                int blocosNecessarios = alocador.calcularBlocosNecessarios(tamanhoArquivoKB);
 
-        Arquivo novo = new Arquivo(nomeArquivo, tamanhoKB, blocoInicial);
-        dir.adicionarArquivo(novo);
-        System.out.printf("Arquivo '%s' criado (%dKB) dentro de '%s'.%n", nomeArquivo, tamanhoKB, nomeDir);
-        alocador.verificarFragmentacaoInterna(nomeArquivo, tamanhoKB);
-        mostrarEstadoBlocos();
+                if (livres >= blocosNecessarios) {
+                    System.out.println("Possível fragmentação externa: há blocos livres suficientes, mas não contíguos.");
+                }
+            }
+            else {
+                Arquivo novo = new Arquivo(nomeArquivo, tamanhoArquivoKB, blocoInicial);
+                diretorio.adicionarArquivo(novo);
+                System.out.printf("Arquivo '%s' criado (%dKB) dentro de '%s'.%n", nomeArquivo, tamanhoArquivoKB, nomeDir);
+                alocador.verificarFragmentacaoInterna(nomeArquivo, tamanhoArquivoKB);
+                mostrarEstadoBlocos();
+            }
+        }
     }
 
     public void excluirArquivo(String nomeDir, String nomeArquivo) {
-        Diretorio dir = diretorios.get(nomeDir);
-        if (dir == null) {
-            System.out.printf("Erro: Diretório '%s' inexistente.%n", nomeDir);
-            return;
+        Diretorio diretorio = diretorios.get(nomeDir);
+        if (diretorio == null) {
+            System.out.println("Erro: Diretório inexistente.");
         }
-        Arquivo arq = dir.buscarArquivo(nomeArquivo);
+        Arquivo arq = diretorio.buscarArquivo(nomeArquivo);
         if (arq == null) {
-            System.out.printf("Erro: Arquivo '%s' não encontrado em '%s'.%n", nomeArquivo, nomeDir);
-            return;
+            System.out.println("Erro: Arquivo não encontrado em " + nomeDir);
         }
-        alocador.desalocarArquivo(nomeArquivo);
-        dir.removerArquivo(nomeArquivo);
-        System.out.printf("Arquivo '%s' removido de '%s'.%n", nomeArquivo, nomeDir);
-        mostrarEstadoBlocos();
+        else{
+            alocador.desalocarBloco(nomeArquivo);
+            diretorio.removerArquivo(nomeArquivo);
+            System.out.println("Arquivo removido com sucesso");
+            mostrarEstadoBlocos();
+        }
     }
 
     public void listarDiretorios() {
         if (diretorios.isEmpty()) {
-            System.out.println("[Raiz] Diretórios: (nenhum)");
-            return;
+            System.out.println("O sistema não contém nenhum diretório");
         }
-        System.out.println("[Raiz] Diretórios:");
-        diretorios.keySet().forEach(d -> System.out.println("  - " + d));
+        else{
+            System.out.println("[Raiz] Diretórios:");
+            for(Diretorio diretorio : diretorios.values()){
+                System.out.println(" - " + diretorio.getNome());
+            }
+        }
     }
 
     public void listarConteudoDiretorio(String nomeDir) {
-        Diretorio dir = diretorios.get(nomeDir);
-        if (dir == null) {
-            System.out.printf("Erro: Diretório '%s' inexistente.%n", nomeDir);
-            return;
+        Diretorio diretorio = diretorios.get(nomeDir);
+        if (diretorio == null) {
+            System.out.println("Erro: Diretório inexistente");
         }
-        System.out.printf("Arquivos em '%s':%n", nomeDir);
-        dir.listarArquivos();
+        else{
+            System.out.println("Arquivos contidos em " + nomeDir);
+            diretorio.listarArquivos();
+        }
     }
 
     public void mostrarEstadoBlocos() {
-        System.out.println("-------------------- Estado dos Blocos --------------------");
+        System.out.println("\n-------------------- Estado dos Blocos --------------------");
         alocador.mostrarBlocos();
         System.out.println("-----------------------------------------------------------\n");
     }

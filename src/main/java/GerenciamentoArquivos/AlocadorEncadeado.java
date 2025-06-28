@@ -3,7 +3,7 @@ package GerenciamentoArquivos;
 import java.util.ArrayList;
 import java.util.List;
 
-public class AlocadorEncadeado {
+public class AlocadorEncadeado implements Alocador {
     private List<Bloco> blocos;
     private int tamanhoBloco;
 
@@ -22,14 +22,9 @@ public class AlocadorEncadeado {
         }
     }
 
-    public int alocarArquivo(String nomeArquivo, int tamanhoArquivoKB) {
-        int blocosNecessarios = tamanhoArquivoKB / tamanhoBloco;
-
-        // if Necessário para casos onde o resultado da divisão dá um número quebrado1
-        if (tamanhoBloco % tamanhoArquivoKB != 0) {
-            blocosNecessarios++;
-        }
-
+    @Override
+    public int alocarNoBloco(String nome, int tamanhoDadoKB) {
+        int blocosNecessarios = calcularBlocosNecessarios(tamanhoDadoKB);
         List<Integer> livres = new ArrayList<>();
 
         for (Bloco bloco : blocos) {
@@ -48,7 +43,7 @@ public class AlocadorEncadeado {
             // Alocação encadeada
             for (int i = 0; i < livres.size(); i++) {
                 int blocoAtual = livres.get(i);
-                blocos.get(blocoAtual).alocar(nomeArquivo);
+                blocos.get(blocoAtual).alocar(nome);
                 if (i < livres.size() - 1) {
                     blocos.get(blocoAtual).setProximoBloco(livres.get(i + 1));
                 }
@@ -57,14 +52,19 @@ public class AlocadorEncadeado {
         return livres.getFirst();
     }
 
-    public void desalocarArquivo(String nomeArquivo) {
-        for (Bloco bloco : blocos) {
-            if (bloco.isOcupado() && nomeArquivo.equals(bloco.getNomeArquivo())) {
+    @Override
+    public void desalocarBloco(String nome) {
+        boolean blocoEncontrado = false;
+
+        for (int i = 0; i < blocos.size() && !blocoEncontrado; i++) {
+            Bloco bloco = blocos.get(i);
+            if (bloco.isOcupado() && nome.equals(bloco.getNomeArquivo())) {
                 bloco.desalocar();
             }
         }
     }
 
+    @Override
     public void mostrarBlocos(){
         //todo: melhorar
         for (Bloco b : blocos) {
@@ -72,6 +72,34 @@ public class AlocadorEncadeado {
         }
     }
 
+    @Override
+    public int calcularBlocosNecessarios(int tamanhoDadosKB){
+        int blocosNecessarios = tamanhoDadosKB / tamanhoBloco;
+
+        /* if Necessário para casos onde o resultado da divisão não dá um número inteiro
+           ex: tamanho do arquivo → 53 kb
+               tamanho do bloco → 4 kb
+               blocosNecessarios = 53 / 4 = 13 (sobra 1 KB), então são necessários 14 blocos para alocar o arquivo
+        */
+        if (tamanhoBloco % tamanhoDadosKB != 0) {
+            blocosNecessarios++;
+        }
+
+        return blocosNecessarios;
+    }
+
+    @Override
+    public int contarBlocosLivres() {
+        int livres = 0;
+        for (Bloco bloco : blocos) {
+            if (!bloco.isOcupado()) {
+                livres++;
+            }
+        }
+        return livres;
+    }
+
+    @Override
     public boolean arquivoExiste(String nomeArquivo) {
         for (Bloco b : blocos) {
             if (nomeArquivo.equals(b.getNomeArquivo())) return true;
@@ -79,8 +107,9 @@ public class AlocadorEncadeado {
         return false;
     }
 
+    @Override
     public void verificarFragmentacaoInterna(String nomeArquivo, int tamanhoArquivoKB) {
-        int blocosNecessarios = (int) Math.ceil((double) tamanhoArquivoKB / tamanhoBloco);
+        int blocosNecessarios = calcularBlocosNecessarios(tamanhoArquivoKB);
         int ultimaPorcentagemUsada = tamanhoArquivoKB % tamanhoBloco;
 
         if (ultimaPorcentagemUsada != 0) {
