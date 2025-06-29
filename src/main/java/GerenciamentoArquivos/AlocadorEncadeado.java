@@ -95,7 +95,7 @@ public class AlocadorEncadeado implements Alocador {
                tamanho do bloco → 4 kb
                blocosNecessarios = 53 / 4 = 13 (sobra 1 KB), então são necessários 14 blocos para alocar o arquivo
         */
-        if (tamanhoBloco % tamanhoDadosKB != 0) {
+        if ( tamanhoDadosKB % tamanhoBloco != 0) {
             blocosNecessarios++;
         }
 
