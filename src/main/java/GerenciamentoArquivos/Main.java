@@ -37,17 +37,19 @@ public class Main {
     }
 
     private static void menuPrincipal(Scanner scanner, SistemaArquivos sistema){
-        System.out.println("""
-            \n========== MENU ==========
-            1. Criar diretório
-            2. Excluir diretório
-            3. Criar arquivo
-            4. Excluir arquivo
-            5. Listar diretórios
-            6. Listar arquivos de um diretório
-            7. Mostrar estado dos blocos
-            Escolha uma opção:\t
-            """);
+        System.out.println(
+                "\n========== MENU ==========\n" +
+                        "1. Criar diretório\n" +
+                        "2. Excluir diretório\n" +
+                        "3. Criar arquivo\n" +
+                        "4. Excluir arquivo\n" +
+                        "5. Listar diretórios\n" +
+                        "6. Listar arquivos de um diretório\n" +
+                        "7. Mostrar estado dos blocos\n" +
+                        (sistema.getAlocador() instanceof AlocadorFAT ? "8. Opção exclusiva da Classe2\n" : "") +
+                        "Escolha uma opção:\t"
+        );
+
         int opcao = scanner.nextInt();
         scanner.nextLine();  // consome o enter digitado pelo usuario
 
@@ -78,6 +80,10 @@ public class Main {
             }
             case 7 -> {
                 sistema.mostrarEstadoBlocos();
+                menuPrincipal(scanner, sistema);
+            }
+            case 8 -> {
+                sistema.mostrarFragmentacaoInternaTotal();
                 menuPrincipal(scanner, sistema);
             }
             default -> {

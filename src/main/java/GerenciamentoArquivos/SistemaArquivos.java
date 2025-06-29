@@ -11,13 +11,14 @@ public class SistemaArquivos {
     // Construtor:
     public SistemaArquivos(int memoriaTotalKB, int tamanhoBloco, int tipoAlocador) {
         this.diretorios = new HashMap<>();
+        this.diretorios.put("[Raiz]", new Diretorio("[Raiz]", -1)); // Diretório raiz
         this.tamanhoBloco = tamanhoBloco;
 
         if (tipoAlocador == 1) {
             this.alocador = new AlocadorEncadeado(memoriaTotalKB, tamanhoBloco);
         }
         else  {
-            this.alocador = new AlocadorFAT();
+            this.alocador = new AlocadorFAT(memoriaTotalKB, tamanhoBloco);
         }
     }
 
@@ -83,13 +84,14 @@ public class SistemaArquivos {
     public void criarArquivo(String nomeDir, String nomeArquivo, int tamanhoArquivoKB) {
         Diretorio diretorio = diretorios.get(nomeDir);
 
-        if (diretorio == null) {
-            System.out.println("Erro: Diretório inesxistente");
+        if (diretorio == null && !nomeDir.isEmpty()) {
+                System.out.println("Erro: Diretório " + nomeDir + " não encontrado.");
+                return;
         }
-        else if (diretorio.possuiArquivo(nomeArquivo) || diretorios.containsKey(nomeArquivo)) {
+        diretorio = diretorio == null ? diretorios.get("[Raiz]") : diretorio; // se o diretório não existir, cria no raiz
+        if (diretorio.possuiArquivo(nomeArquivo) || diretorios.containsKey(nomeArquivo)) {
             System.out.println("Erro: Já existe um arquivo ou diretório chamado " + nomeArquivo);
-        }
-        else{
+        } else{
             Arquivo novoArquivo = new Arquivo(nomeArquivo, tamanhoArquivoKB, -1);
             int blocoInicial = alocador.alocarNoBloco(nomeArquivo, tamanhoArquivoKB, novoArquivo); // bloco ainda não definido
 
@@ -114,9 +116,11 @@ public class SistemaArquivos {
 
     public void excluirArquivo(String nomeDir, String nomeArquivo) {
         Diretorio diretorio = diretorios.get(nomeDir);
-        if (diretorio == null) {
+        if (diretorio == null & !nomeDir.isEmpty()) {
             System.out.println("Erro: Diretório inexistente.");
+            return;
         }
+        diretorio = diretorio == null ? diretorios.get("[Raiz]") : diretorio; // se o diretório não existir, cria no raiz
         Arquivo arq = diretorio.buscarArquivo(nomeArquivo);
         if (arq == null) {
             System.out.println("Erro: Arquivo não encontrado em " + nomeDir);
@@ -124,6 +128,7 @@ public class SistemaArquivos {
         else{
             alocador.desalocarBloco(nomeArquivo);
             diretorio.removerArquivo(nomeArquivo);
+            alocador.verificarFragmentacaoInterna(nomeArquivo, arq.getTamanho());
             System.out.println("Arquivo removido com sucesso");
             mostrarEstadoBlocos();
         }
@@ -132,29 +137,56 @@ public class SistemaArquivos {
     public void listarDiretorios() {
         if (diretorios.isEmpty()) {
             System.out.println("O sistema não contém nenhum diretório");
+            return;
         }
-        else{
-            System.out.println("[Raiz] Diretórios:");
-            for(Diretorio diretorio : diretorios.values()){
-                System.out.println(" - " + diretorio.getNome());
+        for (Diretorio diretorio : diretorios.values()) {
+            if (!diretorio.getNome().equals("[Raiz]")) {
+                System.out.println(diretorio.getNome());
+                for (Arquivo arquivo : diretorio.getArquivos()) {
+                    System.out.println("  └── " + arquivo.getNome());
+                }
+            } else {
+                for (Arquivo arquivo : diretorio.getArquivos()) {
+                    System.out.println(arquivo.getNome());
+                }
             }
         }
     }
 
     public void listarConteudoDiretorio(String nomeDir) {
         Diretorio diretorio = diretorios.get(nomeDir);
-        if (diretorio == null) {
+        if (diretorio == null & !nomeDir.isEmpty()) {
             System.out.println("Erro: Diretório inexistente");
+            return;
         }
-        else{
-            System.out.println("Arquivos contidos em " + nomeDir);
-            diretorio.listarArquivos();
-        }
+        diretorio = diretorio == null ? diretorios.get("[Raiz]") : diretorio; // se o diretório não existir, cria no raiz
+        System.out.println("Diretório " + nomeDir + ":");
+        diretorio.listarArquivos();
     }
 
     public void mostrarEstadoBlocos() {
         System.out.println("\n-------------------- Estado dos Blocos --------------------");
         alocador.mostrarBlocos();
         System.out.println("-----------------------------------------------------------\n");
+    }
+
+    public void mostrarFragmentacaoInternaTotal() {
+        if (alocador instanceof AlocadorFAT) {
+            ((AlocadorFAT) alocador).verificarFragmentacaoInternaTotal();
+        } else {
+            System.out.println("Fragmentação interna total não disponível para alocador encadeado.");
+        }
+    }
+
+    public Map<String, Diretorio> getDiretorios() {
+        return diretorios;
+    }
+
+    public Alocador getAlocador() {
+        return alocador;
+    }
+
+    public int getTamanhoBloco() {
+        return tamanhoBloco;
     }
 }
