@@ -12,43 +12,42 @@ public class AlocadorEncadeado implements Alocador {
         this.tamanhoBloco = tamanhoBlocoKB;
         int totalBlocos = totalMemoriaKB / tamanhoBlocoKB;
         this.blocos = new ArrayList<>();
-        iniciaizarAlocador(totalBlocos);
+        inicializarAlocador(totalBlocos);
     }
 
     // Métodos:
-    private void iniciaizarAlocador(int totalBlocos){
+    private void inicializarAlocador(int totalBlocos){
         for (int i = 0; i < totalBlocos; i++) {
             blocos.add(new Bloco(i));
         }
     }
 
     @Override
-    public int alocarNoBloco(String nome, int tamanhoDadoKB) {
+    public int alocarNoBloco(String nome, int tamanhoDadoKB, Object objetoAlocado) {
         int blocosNecessarios = calcularBlocosNecessarios(tamanhoDadoKB);
         List<Integer> livres = new ArrayList<>();
 
-        for (Bloco bloco : blocos) {
-            if (!bloco.isOcupado()) {
-                livres.add(bloco.getId());
-            }
-            if (livres.size() == blocosNecessarios) {
-                break;
-            }
-
-            if (livres.size() < blocosNecessarios) {
-                System.out.println("Erro: Memória insuficiente.");
-                return -1;
-            }
-
-            // Alocação encadeada
-            for (int i = 0; i < livres.size(); i++) {
-                int blocoAtual = livres.get(i);
-                blocos.get(blocoAtual).alocar(nome);
-                if (i < livres.size() - 1) {
-                    blocos.get(blocoAtual).setProximoBloco(livres.get(i + 1));
-                }
+        for (int i = 0; i < blocos.size() && livres.size() < blocosNecessarios; i++) {
+            if (!blocos.get(i).isOcupado()) {
+                livres.add(blocos.get(i).getId());
             }
         }
+
+        if (livres.size() < blocosNecessarios) {
+            System.out.println("Erro: Memória insuficiente.");
+            return -1;
+        }
+
+        // Alocação encadeada
+        for (int i = 0; i < livres.size(); i++) {
+            int blocoAtual = livres.get(i);
+            blocos.get(blocoAtual).alocar(nome, objetoAlocado);
+            if (i < livres.size() - 1) {
+                blocos.get(blocoAtual).setProximoBloco(livres.get(i + 1));
+            }
+        }
+        // marcando o fim da cadeia no último bloco
+        blocos.get(livres.getLast()).setProximoBloco(-1);
         return livres.getFirst();
     }
 
@@ -58,7 +57,7 @@ public class AlocadorEncadeado implements Alocador {
 
         for (int i = 0; i < blocos.size() && !blocoEncontrado; i++) {
             Bloco bloco = blocos.get(i);
-            if (bloco.isOcupado() && nome.equals(bloco.getNomeArquivo())) {
+            if (bloco.isOcupado() && nome.equals(bloco.getNome())) {
                 bloco.desalocar();
             }
         }
@@ -66,10 +65,25 @@ public class AlocadorEncadeado implements Alocador {
 
     @Override
     public void mostrarBlocos(){
-        //todo: melhorar
-        for (Bloco b : blocos) {
-            System.out.println(b);
+        for (Bloco bloco : blocos) {
+            if (!bloco.isOcupado()) {
+                System.out.printf("Bloco %2d | LIVRE%n", bloco.getId());
+            }
+            else {
+                String tipo;
+                if (bloco.getObjetoAlocado() instanceof Diretorio) {
+                    tipo = "Diretorio";
+                }
+                else {
+                    tipo = "Arquivo";
+                }
+                String nome = bloco.getNome();
+                String prox = bloco.getProximoBloco() == -1 ? "fim" : String.valueOf(bloco.getProximoBloco());
+
+                System.out.printf("Bloco %2d | %-9s: %-16s | Próximo: %s%n", bloco.getId(), tipo, nome, prox);
+            }
         }
+
     }
 
     @Override
@@ -100,16 +114,7 @@ public class AlocadorEncadeado implements Alocador {
     }
 
     @Override
-    public boolean arquivoExiste(String nomeArquivo) {
-        for (Bloco b : blocos) {
-            if (nomeArquivo.equals(b.getNomeArquivo())) return true;
-        }
-        return false;
-    }
-
-    @Override
     public void verificarFragmentacaoInterna(String nomeArquivo, int tamanhoArquivoKB) {
-        int blocosNecessarios = calcularBlocosNecessarios(tamanhoArquivoKB);
         int ultimaPorcentagemUsada = tamanhoArquivoKB % tamanhoBloco;
 
         if (ultimaPorcentagemUsada != 0) {

@@ -3,34 +3,40 @@ package GerenciamentoArquivos;
 public class Bloco {
     private int id;
     private boolean ocupado;
-    private String nomeArquivo;
+    private String nome;
     private Integer proximoBloco;
+    private Object objetoAlocado; // armazena a instância do objeto alocado (diretório ou arquivo)
 
     // Construtor:
     public Bloco(int id) {
         this.id = id;
         this.ocupado = false;
-        this.nomeArquivo = null;
+        this.nome = null;
         this.proximoBloco = null;
+        this.objetoAlocado = null;
     }
 
     // Métodos:
-    public void alocar(String nomeArquivo) {
+    public void alocar(String nome, Object objetoAlocado) {
         this.ocupado = true;
-        this.nomeArquivo = nomeArquivo;
+        this.nome = nome;
+        this.objetoAlocado = objetoAlocado;
     }
 
     public void desalocar() {
         this.ocupado = false;
-        this.nomeArquivo = null;
+        this.nome = null;
         this.proximoBloco = null;
+        this.objetoAlocado = null;
     }
 
     // Getters e Setters:
-
-
     public int getId() {
         return id;
+    }
+
+    public Object getObjetoAlocado() {
+        return objetoAlocado;
     }
 
     public boolean isOcupado() {
@@ -41,12 +47,12 @@ public class Bloco {
         this.ocupado = ocupado;
     }
 
-    public String getNomeArquivo() {
-        return nomeArquivo;
+    public String getNome() {
+        return nome;
     }
 
-    public void setNomeArquivo(String nomeArquivo) {
-        this.nomeArquivo = nomeArquivo;
+    public void setNome(String nome) {
+        this.nome = nome;
     }
 
     public Integer getProximoBloco() {

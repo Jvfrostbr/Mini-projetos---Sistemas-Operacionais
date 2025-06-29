@@ -14,7 +14,7 @@ public class Main {
         System.out.println("Digite o tamanho total de memória do sistema de arquivos (em KB): ");
         int tamMemoria = scanner.nextInt();
 
-        System.out.println("Digite o tamanho dos blocos: ");
+        System.out.println("Digite o tamanho dos blocos (em KB): ");
         int tamanhoblocos = scanner.nextInt();
 
         return new SistemaArquivos(tamMemoria, tamanhoblocos, tipoAlocador);
@@ -38,7 +38,7 @@ public class Main {
 
     private static void menuPrincipal(Scanner scanner, SistemaArquivos sistema){
         System.out.println("""
-            ========== MENU ==========
+            \n========== MENU ==========
             1. Criar diretório
             2. Excluir diretório
             3. Criar arquivo
@@ -49,6 +49,7 @@ public class Main {
             Escolha uma opção:\t
             """);
         int opcao = scanner.nextInt();
+        scanner.nextLine();  // consome o enter digitado pelo usuario
 
         switch (opcao) {
             case 1 -> {
@@ -93,13 +94,15 @@ public class Main {
     }
 
     private static void deletarDiretorio(Scanner scanner, SistemaArquivos sistema){
-        System.out.print("Digite o nome do diretório a ser excluido: ");
+        sistema.listarDiretorios();
+        System.out.print("\nDigite o nome do diretório a ser excluido: ");
         String nomeDiretorio = scanner.nextLine();
         sistema.excluirDiretorio(nomeDiretorio, scanner);
     }
 
     private static void criarArquivo(Scanner scanner, SistemaArquivos sistema){
-        System.out.print("Digite o nome do diretório destino: ");
+        sistema.listarDiretorios();
+        System.out.print("\nDigite o nome do diretório destino: ");
         String nomeDir = scanner.nextLine();
         System.out.print("Digite o nome do arquivo: ");
         String nomeArq = scanner.nextLine();
@@ -110,9 +113,11 @@ public class Main {
     }
 
     private static void deletarArquivo(Scanner scanner, SistemaArquivos sistema){
-        System.out.print("Digite o nome do diretório: ");
+        sistema.listarDiretorios();
+        System.out.print("\nDigite o nome do diretório: ");
         String nomeDir = scanner.nextLine();
-        System.out.print("Digite o nome do arquivo: ");
+        sistema.listarConteudoDiretorio(nomeDir);
+        System.out.print("\nDigite o nome do arquivo: ");
         String nomeArq = scanner.nextLine();
         sistema.excluirArquivo(nomeDir, nomeArq);
     }

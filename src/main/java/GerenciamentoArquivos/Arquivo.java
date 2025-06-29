@@ -28,4 +28,8 @@ public class Arquivo {
     public String toString() {
         return String.format("Arquivo: %s | Tamanho: %dKB | Bloco Inicial: %d", nome, tamanho, blocoInicial);
     }
+
+    public void setBlocoInicial(int blocoInicial) {
+        this.blocoInicial = blocoInicial;
+    }
 }

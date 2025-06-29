@@ -6,7 +6,7 @@ import java.util.List;
 public class Diretorio {
     private final String nome;
     private final List<Arquivo> arquivos;
-    private final int blocoAlocado;
+    private int blocoAlocado;
 
     // Construtor:
     public Diretorio(String nome, int blocoAlocado) {
@@ -68,5 +68,9 @@ public class Diretorio {
 
     public int getBlocoAlocado() {
         return blocoAlocado;
+    }
+
+    public void setBlocoAlocado(int blocoAlocado) {
+        this.blocoAlocado = blocoAlocado;
     }
 }

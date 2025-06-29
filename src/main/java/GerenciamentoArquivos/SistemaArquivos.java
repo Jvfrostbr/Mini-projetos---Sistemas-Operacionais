@@ -23,17 +23,18 @@ public class SistemaArquivos {
 
     // Métodos:
     public void criarDiretorio(String nomeDiretorio) {
-        if (diretorios.containsKey(nomeDiretorio) || alocador.arquivoExiste(nomeDiretorio)) {
+        if (diretorios.containsKey(nomeDiretorio)) {
             System.out.println("Erro: Já existe um arquivo ou diretório chamado " + nomeDiretorio);
         }
         else {
-            int blocoDiretorio = alocador.alocarNoBloco(nomeDiretorio, tamanhoBloco);
+            Diretorio novoDiretorio = new Diretorio(nomeDiretorio, -1); // bloco ainda não definido
+            int blocoDiretorio = alocador.alocarNoBloco(nomeDiretorio, tamanhoBloco, novoDiretorio);
             if (blocoDiretorio == -1) {
                 System.out.println("Erro: Memória insuficiente para alocar diretório.");
             }
             else {
-                Diretorio novoDir = new Diretorio(nomeDiretorio, blocoDiretorio);
-                diretorios.put(nomeDiretorio, novoDir);
+                novoDiretorio.setBlocoAlocado(blocoDiretorio); // Atualizando agr o bloco que o diretório foi alocado
+                diretorios.put(nomeDiretorio, novoDiretorio);
                 System.out.printf("Diretório '%s' criado no bloco %d.%n", nomeDiretorio, blocoDiretorio);
                 mostrarEstadoBlocos();
             }
@@ -85,11 +86,12 @@ public class SistemaArquivos {
         if (diretorio == null) {
             System.out.println("Erro: Diretório inesxistente");
         }
-        else if (diretorio.possuiArquivo(nomeArquivo) || diretorios.containsKey(nomeArquivo) || alocador.arquivoExiste(nomeArquivo)) {
+        else if (diretorio.possuiArquivo(nomeArquivo) || diretorios.containsKey(nomeArquivo)) {
             System.out.println("Erro: Já existe um arquivo ou diretório chamado " + nomeArquivo);
         }
         else{
-            int blocoInicial = alocador.alocarNoBloco(nomeArquivo, tamanhoArquivoKB);
+            Arquivo novoArquivo = new Arquivo(nomeArquivo, tamanhoArquivoKB, -1);
+            int blocoInicial = alocador.alocarNoBloco(nomeArquivo, tamanhoArquivoKB, novoArquivo); // bloco ainda não definido
 
             // se blocoInicial == -1 → Alocação do arquivo falhou
             if (blocoInicial == -1) {
@@ -101,8 +103,8 @@ public class SistemaArquivos {
                 }
             }
             else {
-                Arquivo novo = new Arquivo(nomeArquivo, tamanhoArquivoKB, blocoInicial);
-                diretorio.adicionarArquivo(novo);
+                novoArquivo.setBlocoInicial(blocoInicial); // Atualizando agr o bloco que o diretório foi alocado
+                diretorio.adicionarArquivo(novoArquivo);
                 System.out.printf("Arquivo '%s' criado (%dKB) dentro de '%s'.%n", nomeArquivo, tamanhoArquivoKB, nomeDir);
                 alocador.verificarFragmentacaoInterna(nomeArquivo, tamanhoArquivoKB);
                 mostrarEstadoBlocos();

@@ -1,16 +1,18 @@
 package GerenciamentoMemoria_Parte2;
 
-public class Pagina {
+public class PaginaFisica {
     private int idProcesso;
-    private String idPagina;
+    private String nome;
     private boolean bitUso;
     private long ultimoTempoUsado;
+    private int id;
 
     //CONSTRUTOR
-    public Pagina(int idProcesso, String idPagina) {
+    public PaginaFisica(String nome ,int idProcesso, int id) {
         this.idProcesso = idProcesso;
-        this.idPagina = idPagina;
+        this.nome = nome;
         this.bitUso = false;
+        this.id = id;
     }
 
     //MÉTODOS:
@@ -23,8 +25,8 @@ public class Pagina {
         return idProcesso;
     }
 
-    public String getIdPagina() {
-        return idPagina;
+    public String getNome() {
+        return nome;
     }
 
     public boolean getBitUso() {
