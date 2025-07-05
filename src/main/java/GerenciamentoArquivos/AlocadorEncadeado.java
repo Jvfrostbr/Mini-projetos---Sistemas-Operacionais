@@ -24,6 +24,7 @@ public class AlocadorEncadeado implements Alocador {
 
     @Override
     public int alocarNoBloco(String nome, int tamanhoDadoKB, Object objetoAlocado) {
+        int retorno;
         int blocosNecessarios = calcularBlocosNecessarios(tamanhoDadoKB);
         List<Integer> livres = new ArrayList<>();
 
@@ -35,28 +36,27 @@ public class AlocadorEncadeado implements Alocador {
 
         if (livres.size() < blocosNecessarios) {
             System.out.println("Erro: Memória insuficiente.");
-            return -1;
+            retorno = -1;
         }
-
-        // Alocação encadeada
-        for (int i = 0; i < livres.size(); i++) {
-            int blocoAtual = livres.get(i);
-            blocos.get(blocoAtual).alocar(nome, objetoAlocado);
-            if (i < livres.size() - 1) {
-                blocos.get(blocoAtual).setProximoBloco(livres.get(i + 1));
+        else{
+            // Alocação encadeada
+            for (int i = 0; i < livres.size(); i++) {
+                int blocoAtual = livres.get(i);
+                blocos.get(blocoAtual).alocar(nome, objetoAlocado);
+                if (i < livres.size() - 1) {
+                    blocos.get(blocoAtual).setProximoBloco(livres.get(i + 1));
+                }
             }
+            // marcando o fim da cadeia no último bloco
+            blocos.get(livres.getLast()).setProximoBloco(-1);
+            retorno = livres.getFirst();
         }
-        // marcando o fim da cadeia no último bloco
-        blocos.get(livres.getLast()).setProximoBloco(-1);
-        return livres.getFirst();
+        return retorno;
     }
 
     @Override
     public void desalocarBloco(String nome) {
-        boolean blocoEncontrado = false;
-
-        for (int i = 0; i < blocos.size() && !blocoEncontrado; i++) {
-            Bloco bloco = blocos.get(i);
+        for (Bloco bloco : blocos) {
             if (bloco.isOcupado() && nome.equals(bloco.getNome())) {
                 bloco.desalocar();
             }
@@ -83,7 +83,6 @@ public class AlocadorEncadeado implements Alocador {
                 System.out.printf("Bloco %2d | %-9s: %-16s | Próximo: %s%n", bloco.getId(), tipo, nome, prox);
             }
         }
-
     }
 
     @Override
