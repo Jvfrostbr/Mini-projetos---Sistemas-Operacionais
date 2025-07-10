@@ -6,6 +6,8 @@ public class Bloco {
     private String nome;
     private Integer proximoBloco;
     private Object objetoAlocado; // armazena a instância do objeto alocado (diretório ou arquivo)
+    private boolean isParidade;  // Novo campo para indicar se o bloco é paridade
+    private Integer valorParidade; // Novo campo para armazenar o valor de paridade
 
     // Construtor:
     public Bloco(int id) {
@@ -28,6 +30,17 @@ public class Bloco {
         this.nome = null;
         this.proximoBloco = null;
         this.objetoAlocado = null;
+        this.isParidade = false;  // Resetando o estado de paridade ao desalocar
+        this.valorParidade = null; // Resetando o valor de paridade ao desalocar
+    }
+
+    public void alocarComoParidade(int valorParidade) {
+        this.ocupado = true;
+        this.isParidade = true;
+        this.valorParidade = valorParidade;
+        this.nome = "PARIDADE_" + valorParidade;
+        this.objetoAlocado = null;
+        this.proximoBloco = null;
     }
 
     // Getters e Setters:
@@ -61,5 +74,15 @@ public class Bloco {
 
     public void setProximoBloco(Integer proximoBloco) {
         this.proximoBloco = proximoBloco;
+    }
+
+    public boolean isParidade() {
+        return isParidade;
+    }
+    public Integer getValorParidade() {
+        return valorParidade;
+    }
+    public void setValorParidade(Integer valorParidade) {
+        this.valorParidade = valorParidade;
     }
 }

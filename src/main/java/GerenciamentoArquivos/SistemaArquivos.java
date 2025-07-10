@@ -1,6 +1,7 @@
 package GerenciamentoArquivos;
 
 import java.util.*;
+import GerenciamentoEntradaSaida_Parte2.AlocadorRAID;
 
 public class SistemaArquivos {
 
@@ -9,7 +10,7 @@ public class SistemaArquivos {
     private final int tamanhoBloco;
 
     // Construtor:
-    public SistemaArquivos(int memoriaTotalKB, int tamanhoBloco, int tipoAlocador) {
+    public SistemaArquivos(int memoriaTotalKB, int tamanhoBloco, int tipoAlocador, int numeroDiscos) {
         this.diretorios = new HashMap<>();
         this.diretorios.put("[Raiz]", new Diretorio("[Raiz]", -1)); // Diretório raiz
         this.tamanhoBloco = tamanhoBloco;
@@ -17,8 +18,10 @@ public class SistemaArquivos {
         if (tipoAlocador == 1) {
             this.alocador = new AlocadorEncadeado(memoriaTotalKB, tamanhoBloco);
         }
-        else  {
+        else if (tipoAlocador == 2) {
             this.alocador = new AlocadorFAT(memoriaTotalKB, tamanhoBloco);
+        } else {
+            this.alocador = new AlocadorRAID(memoriaTotalKB, tamanhoBloco, numeroDiscos);
         }
     }
 
