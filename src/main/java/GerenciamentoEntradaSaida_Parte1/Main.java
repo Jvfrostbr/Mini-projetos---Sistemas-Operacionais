@@ -1,6 +1,5 @@
 package GerenciamentoEntradaSaida_Parte1;
 
-import java.util.List;
 import java.util.Random;
 import java.util.Scanner;
 
@@ -11,13 +10,12 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("=== Simulador de Gerenciamento de E/S ===");
         Disco disco = inicializarDisco();
-        lerRequisicoes(disco);
-
-        int opcaoAlgoritmo = escolherAlgoritmo();
-
-        executarEscalonamento(disco, opcaoAlgoritmo);
-
-        scanner.close();
+        while(true){
+            gerarBlocosRequisitados(disco);
+            int algoritmoSelecionado = escolherAlgoritmo();
+            SimuladorEntradaSaida simulador = new SimuladorEntradaSaida(disco);
+            simulador.executarEscalonamento(algoritmoSelecionado);
+        }
     }
 
     private static Disco inicializarDisco() {
@@ -30,22 +28,38 @@ public class Main {
         System.out.print("Digite a posição inicial da cabeça do disco: ");
         int posCabeca = scanner.nextInt();
 
+        if(posCabeca > blocoMax || posCabeca < blocoMin){
+            System.out.println("A posição da cabeça do disco tem que estar entre o bloco máximo e o bloco mínimo");
+            inicializarDisco();
+        }
+
         return new Disco(blocoMin, blocoMax, posCabeca);
     }
 
-    private static void lerRequisicoes(Disco disco) {
-        System.out.println("Deseja informar manualmente os blocos (M) ou gerar aleatoriamente (A)? ");
-        char escolhaEntrada = scanner.next().toUpperCase().charAt(0);
+    private static void gerarBlocosRequisitados(Disco disco) {
+        System.out.println("""
+        Deseja informar manualmente os blocos a serem acessados:
+        1 - Manualmente
+        2 - Aleatoriamente
+        Escolha uma opção:\t
+        """);
+        int opcao = scanner.next().toUpperCase().charAt(0);
         scanner.nextLine(); // consumir o fim da linha
 
-        if (escolhaEntrada == 'M') {
+        if (opcao == 1) {
             System.out.println("Digite os blocos a serem visitados (digite 'fim' para encerrar):");
+
             while (true) {
                 System.out.print("Bloco: ");
                 String entrada = scanner.nextLine();
-                if (entrada.equalsIgnoreCase("fim")) break;
+                if (entrada.equalsIgnoreCase("fim")){
+                    break;
+                }
+                int bloco = Integer.parseInt(entrada);
+                if (bloco < 0) {
+                    System.out.println("Entrada inválida, digite um número maior que 0");
+                }
                 try {
-                    int bloco = Integer.parseInt(entrada);
                     disco.adicionarRequisicao(bloco);
                 } catch (NumberFormatException e) {
                     System.out.println("Entrada inválida, digite um número válido ou 'fim'.");
@@ -79,44 +93,5 @@ public class Main {
             escolherAlgoritmo();
         }
         return opcao;
-    }
-
-    private static void executarEscalonamento(Disco disco, int opcaoAlgoritmo) {
-        EscalonadorDisco escalonador = new EscalonadorDisco();
-
-        List<Integer> ordemVisitada;
-        int tempoTotalSeek;
-
-        switch (opcaoAlgoritmo) {
-            case 1 -> {
-                ordemVisitada = escalonador.fcfs(disco);
-                tempoTotalSeek = escalonador.calcularTempoSeek(disco.getPosicaoCabeca(), ordemVisitada);
-                System.out.println("\nAlgoritmo FCFS selecionado.");
-            }
-            case 2 -> {
-                ordemVisitada = escalonador.sstf(disco);
-                tempoTotalSeek = escalonador.calcularTempoSeek(disco.getPosicaoCabeca(), ordemVisitada);
-                System.out.println("\nAlgoritmo SSTF selecionado.");
-            }
-            case 3 -> {
-                ordemVisitada = escalonador.scan(disco);
-                tempoTotalSeek = escalonador.calcularTempoSeekScanLook(disco, ordemVisitada);
-                System.out.println("\nAlgoritmo SCAN selecionado.");
-            }
-            case 4 -> {
-                ordemVisitada = escalonador.look(disco);
-                tempoTotalSeek = escalonador.calcularTempoSeekScanLook(disco, ordemVisitada);
-                System.out.println("\nAlgoritmo LOOK selecionado.");
-            }
-            default -> {
-                System.out.println("Opção inválida. Encerrando programa.");
-                return;
-            }
-        }
-
-        // Exibir resultado
-        System.out.println("\nOrdem dos blocos visitados:");
-        ordemVisitada.forEach(b -> System.out.print(b + " "));
-        System.out.println("\nTempo total de seek: " + tempoTotalSeek + " unidades de tempo");
     }
 }
