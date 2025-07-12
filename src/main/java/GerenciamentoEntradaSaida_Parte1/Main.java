@@ -41,7 +41,7 @@ public class Main {
 
     private static void gerarBlocosRequisitados(Disco disco) {
         System.out.println("""
-        Deseja informar manualmente os blocos a serem acessados:
+        Escolha a forma de como os blocos serão gerados:
         1 - Manualmente
         2 - Aleatoriamente
         Escolha uma opção:\t

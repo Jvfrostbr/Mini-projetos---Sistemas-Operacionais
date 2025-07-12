@@ -95,7 +95,7 @@ public class Main {
             System.out.print("""
                 Defina o a forma de como as páginas serão referenciadas:
                 1 - FIFO
-                2 - Aletório
+                2 - Aleatório
                 Escolha uma opção:
                 """);
 
