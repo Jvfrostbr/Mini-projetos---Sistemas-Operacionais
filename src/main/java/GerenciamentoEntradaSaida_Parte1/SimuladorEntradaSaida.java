@@ -21,47 +21,47 @@ public class SimuladorEntradaSaida {
             case 2 -> tempoTotal = sstf();
             case 3 -> tempoTotal = scan();
             case 4 -> tempoTotal = look();
+            case 5 -> tempoTotal = cscan();
+            case 6 -> tempoTotal = clook();
         }
         System.out.println("Tempo total de seek: " + tempoTotal + " u.t.");
     }
 
     public int fcfs() {
-        System.out.println("\n[FCFS]");
-        int tempoTotal = 0;
-        int atual = disco.getPosicaoCabeca();
-
-        for (int bloco : disco.getRequisicoes()) {
-            int seek = Math.abs(atual - bloco);
-            System.out.printf("Movendo da trilha %d para %d (seek: %d)\n", atual, bloco, seek);
-            tempoTotal += seek;
-            atual = bloco;
-        }
-        return tempoTotal;
+        return moverEntreBlocos(disco.getRequisicoes());
     }
 
     public int sstf() {
         List<Integer> pendentes = new ArrayList<>(disco.getRequisicoes());
-        int atual = disco.getPosicaoCabeca();
         int tempoTotal = 0;
 
         while (!pendentes.isEmpty()) {
-            int maisPerto = pendentes.getFirst();
-            int menorDist = Math.abs(atual - maisPerto);
-
-            for (int bloco : pendentes) {
-                int dist = Math.abs(atual - bloco);
-                if (dist < menorDist) {
-                    menorDist = dist;
-                    maisPerto = bloco;
-                }
-            }
-
-            System.out.printf("Movendo da trilha %d para %d (seek: %d)\n", atual, maisPerto, menorDist);
-            tempoTotal += menorDist;
-            atual = maisPerto;
-            pendentes.remove(Integer.valueOf(maisPerto));
+            int blocoMaisProximo = procurarBlocoMaisProximo(pendentes);
+            int seek = Math.abs(disco.getPosicaoCabeca() - blocoMaisProximo);
+            imprimirMovimento(disco.getPosicaoCabeca(), blocoMaisProximo, seek, false);
+            tempoTotal += seek;
+            disco.setPosicaoCabeca(blocoMaisProximo); // Atualizando a cabeça
+            pendentes.remove(Integer.valueOf(blocoMaisProximo));
         }
         return tempoTotal;
+    }
+
+    private int procurarBlocoMaisProximo(List<Integer> blocosPendentes){
+        int blocoMaisProximo = blocosPendentes.getFirst();
+        int menorDistancia = Math.abs(disco.getPosicaoCabeca() - blocoMaisProximo);
+
+        for (int bloco : blocosPendentes) {
+            int distancia = Math.abs(disco.getPosicaoCabeca() - bloco);
+            if (distancia < menorDistancia) {
+                menorDistancia = distancia;
+                blocoMaisProximo = bloco;
+            }
+            // Em caso de empate, o bloco mais próximo escolhido vai ser oq o bloco que tiver o menor valor
+            else if (distancia == menorDistancia) {
+                blocoMaisProximo = Math.min(blocoMaisProximo, bloco);
+            }
+        }
+        return blocoMaisProximo;
     }
 
     public int scan() {
@@ -70,8 +70,9 @@ public class SimuladorEntradaSaida {
         List<Integer> acimaCabeca = new ArrayList<>();
         List<Integer> abaixoCabeca = new ArrayList<>();
 
-        organizarBlocosParaScan(blocos, disco.getPosicaoCabeca(), acimaCabeca, abaixoCabeca);
+        organizarBlocosScanLook(blocos, disco.getPosicaoCabeca(), acimaCabeca, abaixoCabeca);
 
+        // Atendendo os blocos acima da cabeça (subida)
         if (!acimaCabeca.isEmpty()){
             tempoTotal += moverEntreBlocos(acimaCabeca);
             disco.setPosicaoCabeca(acimaCabeca.getLast());
@@ -79,22 +80,101 @@ public class SimuladorEntradaSaida {
 
         // Movendo a cabeca do disco até a extremidade superior
         if (disco.getPosicaoCabeca() != disco.getBlocoMax()) {
-            tempoTotal += moverParaExtremidade(disco.getPosicaoCabeca(), disco.getBlocoMax());
+            tempoTotal += moverParaExtremidade(disco.getPosicaoCabeca(), disco.getBlocoMax(), true);
             disco.setPosicaoCabeca(disco.getBlocoMax());
         }
-        tempoTotal += moverEntreBlocos(abaixoCabeca);
+
+        // Atendendo os blocos abaixo da cabeça (descida)
+        if(!abaixoCabeca.isEmpty()){
+            tempoTotal += moverEntreBlocos(abaixoCabeca);
+        }
         return tempoTotal;
     }
 
-    private void organizarBlocosParaScan(List<Integer> blocos, int cabeca, List<Integer> acimaCabeca, List<Integer> abaixoCabeca) {
-        blocos.add(cabeca);
-        Collections.sort(blocos);
+    public int cscan() {
+        int tempoTotal = 0;
+        List<Integer> blocos = new ArrayList<>(disco.getRequisicoes());
+        List<Integer> acimaCabeca = new ArrayList<>();
+        List<Integer> abaixoCabeca = new ArrayList<>();
 
-        // Separa os blocos que estão acima da cabeça ou abaixo da cabeça
-        for (int bloco : blocos) {
-            (bloco >= cabeca ? acimaCabeca : abaixoCabeca).add(bloco);
+        organizarBlocosScanLook(blocos, disco.getPosicaoCabeca(), acimaCabeca, abaixoCabeca);
+
+        // Atende blocos acima da cabeça (subida)
+        if (!acimaCabeca.isEmpty()) {
+            tempoTotal += moverEntreBlocos(acimaCabeca);
+            disco.setPosicaoCabeca(acimaCabeca.getLast());
         }
-        Collections.reverse(abaixoCabeca); // para descer na volta
+
+        // Movendo a cabeca do disco até a extremidade superior
+        if (disco.getPosicaoCabeca() != disco.getBlocoMax()) {
+            tempoTotal += moverParaExtremidade(disco.getPosicaoCabeca(), disco.getBlocoMax(), true);
+            disco.setPosicaoCabeca(disco.getBlocoMax());
+        }
+
+        // Retorno circular: volta para o bloco mínimo sem atender ninguém
+        if (!abaixoCabeca.isEmpty()) {
+
+            // Movendo a cabeca do disco até a extremidade Inferior
+            tempoTotal += moverParaExtremidade(disco.getPosicaoCabeca(), disco.getBlocoMin(), false);
+            disco.setPosicaoCabeca(disco.getBlocoMin()); //
+
+            // Atendendo blocos abaixo da cabeça, agora do início para frente
+            Collections.sort(abaixoCabeca);
+            tempoTotal += moverEntreBlocos(abaixoCabeca);
+        }
+
+        return tempoTotal;
+    }
+
+    private int moverParaExtremidade(int origem, int extremidade, boolean extremidadeSuperior) {
+        int seek = Math.abs(origem - extremidade);
+        imprimirMovimento(origem, extremidade, seek, extremidadeSuperior);
+        disco.setPosicaoCabeca(disco.getBlocoMax());
+        return seek;
+    }
+
+    public int look() {
+        int tempoTotal = 0;
+        List<Integer> blocos = new ArrayList<>(disco.getRequisicoes());
+        List<Integer> acimaCabeca = new ArrayList<>();
+        List<Integer> abaixoCabeca = new ArrayList<>();
+
+        organizarBlocosScanLook(blocos, disco.getPosicaoCabeca(), acimaCabeca, abaixoCabeca);
+        if(!acimaCabeca.isEmpty()){
+            tempoTotal += moverEntreBlocos(acimaCabeca);
+        }
+        if (!abaixoCabeca.isEmpty()) {
+            tempoTotal += moverEntreBlocos(abaixoCabeca);
+        }
+
+        return tempoTotal;
+    }
+
+    public int clook() {
+        int tempoTotal = 0;
+        List<Integer> blocos = new ArrayList<>(disco.getRequisicoes());
+
+        List<Integer> acimaCabeca = new ArrayList<>();
+        List<Integer> abaixoCabeca = new ArrayList<>();
+
+        organizarBlocosScanLook(blocos, disco.getPosicaoCabeca(), acimaCabeca, abaixoCabeca);
+
+        if (!acimaCabeca.isEmpty()) {
+            tempoTotal += moverEntreBlocos(acimaCabeca);
+            disco.setPosicaoCabeca(acimaCabeca.getLast());
+        }
+
+        if (!abaixoCabeca.isEmpty()) {
+            // Vai direto para o menor bloco requisitado
+            int menor = Collections.min(abaixoCabeca);
+            tempoTotal += moverParaExtremidade(disco.getPosicaoCabeca(), menor, false);
+            disco.setPosicaoCabeca(menor);
+
+            Collections.sort(abaixoCabeca);
+            tempoTotal += moverEntreBlocos(abaixoCabeca);
+        }
+
+        return tempoTotal;
     }
 
     private int moverEntreBlocos(List<Integer> blocosDestino) {
@@ -109,55 +189,22 @@ public class SimuladorEntradaSaida {
         return tempo;
     }
 
-    private int moverParaExtremidade(int origem, int extremidade) {
-        int seek = Math.abs(origem - extremidade);
-        imprimirMovimento(origem, extremidade, seek, true);
-        disco.setPosicaoCabeca(disco.getBlocoMax());
-        return seek;
-    }
-
     private void imprimirMovimento(int de, int para, int seek, boolean fimDoDisco) {
-        if (fimDoDisco)
-            System.out.printf("Movendo de [ %d ] -> [ %d ] | (seek: %d) [Fim do disco]\n", de, para, seek);
-        else
-            System.out.printf("Movendo [ %d ] -> [ %d ] | (seek: %d)\n", de, para, seek);
+        if (seek != 0){
+            if (fimDoDisco)
+                System.out.printf("Movendo de [ %d ] -> [ %d ] | (seek: %d) [Fim do disco]\n", de, para, seek);
+            else
+                System.out.printf("Movendo [ %d ] -> [ %d ] | (seek: %d)\n", de, para, seek);
+        }
     }
 
-    public int look() {
-        List<Integer> blocos = new ArrayList<>(disco.getRequisicoes());
-        int atual = disco.getPosicaoCabeca();
-        int tempoTotal = 0;
-
-        blocos.add(atual);
+    private void organizarBlocosScanLook(List<Integer> blocos, int cabeca, List<Integer> acimaCabeca, List<Integer> abaixoCabeca) {
         Collections.sort(blocos);
 
-        List<Integer> acima = new ArrayList<>();
-        List<Integer> abaixo = new ArrayList<>();
-
+        // Separa os blocos que estão acima da cabeça ou abaixo da cabeça
         for (int bloco : blocos) {
-            if (bloco >= atual) {
-                acima.add(bloco);
-            } else {
-                abaixo.add(bloco);
-            }
+            (bloco >= cabeca ? acimaCabeca : abaixoCabeca).add(bloco);
         }
-        Collections.reverse(abaixo);
-
-        int pos = atual;
-        for (int bloco : acima) {
-            int seek = Math.abs(pos - bloco);
-            System.out.printf("Movendo da trilha %d para %d (seek: %d)\n", pos, bloco, seek);
-            tempoTotal += seek;
-            pos = bloco;
-        }
-
-        // Agora volta descendo, mas só até o menor bloco requisitado (não até o bloco mínimo do disco)
-        for (int bloco : abaixo) {
-            int seek = Math.abs(pos - bloco);
-            System.out.printf("Movendo da trilha %d para %d (seek: %d)\n", pos, bloco, seek);
-            tempoTotal += seek;
-            pos = bloco;
-        }
-        return tempoTotal;
+        Collections.reverse(abaixoCabeca); // para descer na volta
     }
 }

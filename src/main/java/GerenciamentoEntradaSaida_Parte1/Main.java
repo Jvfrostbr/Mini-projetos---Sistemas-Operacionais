@@ -10,11 +10,14 @@ public class Main {
     public static void main(String[] args) {
         System.out.println("=== Simulador de Gerenciamento de E/S ===");
         Disco disco = inicializarDisco();
+        int cabeca = disco.getPosicaoCabeca();
+        gerarBlocosRequisitados(disco);
+
         while(true){
-            gerarBlocosRequisitados(disco);
             int algoritmoSelecionado = escolherAlgoritmo();
             SimuladorEntradaSaida simulador = new SimuladorEntradaSaida(disco);
             simulador.executarEscalonamento(algoritmoSelecionado);
+            disco.setPosicaoCabeca(cabeca); // Voltando a cabeça para a posição inicial
         }
     }
 
@@ -43,7 +46,7 @@ public class Main {
         2 - Aleatoriamente
         Escolha uma opção:\t
         """);
-        int opcao = scanner.next().toUpperCase().charAt(0);
+        int opcao = scanner.nextInt();
         scanner.nextLine(); // consumir o fim da linha
 
         if (opcao == 1) {
@@ -81,15 +84,17 @@ public class Main {
         int opcao;
 
         System.out.println("""
-                Escolha o algoritmo de escalonamento:
+                \nEscolha o algoritmo de escalonamento:
                 1 - FCFS
                 2 - SSTF
                 3 - SCAN
                 4 - LOOK
+                5 - C-SCAN
+                6 - C-LOOK
                 escolha uma opção:\t""");
         opcao = scanner.nextInt();
 
-        if(opcao < 1 || opcao > 4){
+        if(opcao < 1 || opcao > 6){
             escolherAlgoritmo();
         }
         return opcao;
