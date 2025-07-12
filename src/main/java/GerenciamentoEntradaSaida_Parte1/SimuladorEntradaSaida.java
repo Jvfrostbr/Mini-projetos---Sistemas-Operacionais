@@ -1,8 +1,6 @@
 package GerenciamentoEntradaSaida_Parte1;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 public class SimuladorEntradaSaida {
     private Disco disco;
@@ -13,25 +11,45 @@ public class SimuladorEntradaSaida {
     }
 
     // Métodos:
-    public void executarEscalonamento(int algoritmoSelecionado) {
+    public void executarEscalonamento(int algoritmoSelecionado, int cabeca) {
         System.out.println("\n====== Iniciando a simulação ======");
-        int tempoTotal = 0;
+        int tempoTotal;
         switch (algoritmoSelecionado) {
-            case 1 -> tempoTotal = fcfs();
-            case 2 -> tempoTotal = sstf();
-            case 3 -> tempoTotal = scan();
-            case 4 -> tempoTotal = look();
-            case 5 -> tempoTotal = cscan();
-            case 6 -> tempoTotal = clook();
+            case 1:
+                tempoTotal = fcfs();
+                System.out.println("Tempo total de seek: " + tempoTotal + " u.t.");
+                break;
+            case 2:
+                tempoTotal = sstf();
+                System.out.println("Tempo total de seek: " + tempoTotal + " u.t.");
+                break;
+            case 3:
+                tempoTotal = scan();
+                System.out.println("Tempo total de seek: " + tempoTotal + " u.t.");
+                break;
+            case 4:
+                tempoTotal = look();
+                System.out.println("Tempo total de seek: " + tempoTotal + " u.t.");
+                break;
+            case 5:
+                tempoTotal = cscan();
+                System.out.println("Tempo total de seek: " + tempoTotal + " u.t.");
+                break;
+            case 6:
+                tempoTotal = clook();
+                System.out.println("Tempo total de seek: " + tempoTotal + " u.t.");
+            case 7:
+                compararTodosAlgoritmos(cabeca);
         }
-        System.out.println("Tempo total de seek: " + tempoTotal + " u.t.");
     }
 
     public int fcfs() {
+        System.out.println("\n --- fcfs ---\n");
         return moverEntreBlocos(disco.getRequisicoes());
     }
 
     public int sstf() {
+        System.out.println("\n --- sstf ---\n");
         List<Integer> pendentes = new ArrayList<>(disco.getRequisicoes());
         int tempoTotal = 0;
 
@@ -65,6 +83,7 @@ public class SimuladorEntradaSaida {
     }
 
     public int scan() {
+        System.out.println("\n --- scan ---\n");
         int tempoTotal = 0;
         List<Integer> blocos = new ArrayList<>(disco.getRequisicoes());
         List<Integer> acimaCabeca = new ArrayList<>();
@@ -92,6 +111,7 @@ public class SimuladorEntradaSaida {
     }
 
     public int cscan() {
+        System.out.println("\n --- C-scan ---\n");
         int tempoTotal = 0;
         List<Integer> blocos = new ArrayList<>(disco.getRequisicoes());
         List<Integer> acimaCabeca = new ArrayList<>();
@@ -134,6 +154,7 @@ public class SimuladorEntradaSaida {
     }
 
     public int look() {
+        System.out.println("\n --- look ---\n");
         int tempoTotal = 0;
         List<Integer> blocos = new ArrayList<>(disco.getRequisicoes());
         List<Integer> acimaCabeca = new ArrayList<>();
@@ -151,6 +172,7 @@ public class SimuladorEntradaSaida {
     }
 
     public int clook() {
+        System.out.println("\n --- c-look ---\n");
         int tempoTotal = 0;
         List<Integer> blocos = new ArrayList<>(disco.getRequisicoes());
 
@@ -206,5 +228,32 @@ public class SimuladorEntradaSaida {
             (bloco >= cabeca ? acimaCabeca : abaixoCabeca).add(bloco);
         }
         Collections.reverse(abaixoCabeca); // para descer na volta
+    }
+
+    private void compararTodosAlgoritmos(int cabeca){
+        Map<String, Integer> resultados = new HashMap<>();
+
+        // Executa todos os algoritmos e armazena os tempos
+        resultados.put("FCFS", fcfs());
+        disco.setPosicaoCabeca(cabeca);
+        resultados.put("SSTF", sstf());
+        disco.setPosicaoCabeca(cabeca);
+        resultados.put("SCAN", scan());
+        disco.setPosicaoCabeca(cabeca);
+        resultados.put("LOOK", look());
+        disco.setPosicaoCabeca(cabeca);
+        resultados.put("C-SCAN", cscan());
+        disco.setPosicaoCabeca(cabeca);
+        resultados.put("C-LOOK", clook());
+
+        // Ordena pelo tempo total de seek (do menor para o maior)
+        List<Map.Entry<String, Integer>> ordenado = new ArrayList<>(resultados.entrySet());
+        ordenado.sort(Map.Entry.comparingByValue());
+
+        // Imprime os resultados ordenados
+        System.out.println("\n====== Comparação dos Algoritmos ======");
+        for (Map.Entry<String, Integer> entry : ordenado) {
+            System.out.printf("%-7s -> Tempo total de seek: %3d u.t.\n", entry.getKey(), entry.getValue());
+        }
     }
 }

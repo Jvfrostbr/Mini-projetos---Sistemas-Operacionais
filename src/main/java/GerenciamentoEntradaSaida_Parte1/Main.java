@@ -16,7 +16,7 @@ public class Main {
         while(true){
             int algoritmoSelecionado = escolherAlgoritmo();
             SimuladorEntradaSaida simulador = new SimuladorEntradaSaida(disco);
-            simulador.executarEscalonamento(algoritmoSelecionado);
+            simulador.executarEscalonamento(algoritmoSelecionado, cabeca);
             disco.setPosicaoCabeca(cabeca); // Voltando a cabeça para a posição inicial
         }
     }
@@ -91,10 +91,11 @@ public class Main {
                 4 - LOOK
                 5 - C-SCAN
                 6 - C-LOOK
+                7 - Comparar todos os algoritmos
                 escolha uma opção:\t""");
         opcao = scanner.nextInt();
 
-        if(opcao < 1 || opcao > 6){
+        if(opcao < 1 || opcao > 7){
             escolherAlgoritmo();
         }
         return opcao;
