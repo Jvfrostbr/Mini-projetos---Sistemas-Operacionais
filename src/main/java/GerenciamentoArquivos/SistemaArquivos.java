@@ -1,27 +1,27 @@
 package GerenciamentoArquivos;
 
 import java.util.*;
-import GerenciamentoEntradaSaida_Parte2.AlocadorRAID;
+import GerenciamentoEntradaSaida_Parte2.RAID;
 
 public class SistemaArquivos {
 
     private final Map<String, Diretorio> diretorios;
     private final Alocador alocador;
     private final int tamanhoBloco;
+    private final RAID RAID;
 
     // Construtor:
     public SistemaArquivos(int memoriaTotalKB, int tamanhoBloco, int tipoAlocador, int numeroDiscos) {
         this.diretorios = new HashMap<>();
         this.diretorios.put("[Raiz]", new Diretorio("[Raiz]", -1)); // Diretório raiz
         this.tamanhoBloco = tamanhoBloco;
+        this.RAID = new RAID(memoriaTotalKB, tamanhoBloco, numeroDiscos);
 
         if (tipoAlocador == 1) {
-            this.alocador = new AlocadorEncadeado(memoriaTotalKB, tamanhoBloco);
+            this.alocador = new AlocadorEncadeado(tamanhoBloco, RAID);
         }
-        else if (tipoAlocador == 2) {
-            this.alocador = new AlocadorFAT(memoriaTotalKB, tamanhoBloco);
-        } else {
-            this.alocador = new AlocadorRAID(memoriaTotalKB, tamanhoBloco, numeroDiscos);
+        else {
+            this.alocador = new AlocadorFAT(memoriaTotalKB, tamanhoBloco, RAID);
         }
     }
 
@@ -47,6 +47,11 @@ public class SistemaArquivos {
 
     public void excluirDiretorio(String nomeDiretorio, Scanner scanner) {
         Diretorio diretorio = diretorios.get(nomeDiretorio);
+
+        if ("[Raiz]".equals(nomeDiretorio)) {
+            System.out.println("Não é possível excluir o diretório raiz!");
+            return;
+        }
 
         if (diretorio == null) {
             System.out.println("Erro: Diretório " + nomeDiretorio + " não encontrado.");

@@ -1,7 +1,7 @@
 package GerenciamentoArquivos;
 
 import java.util.Scanner;
-import GerenciamentoEntradaSaida_Parte2.AlocadorRAID;
+import GerenciamentoEntradaSaida_Parte2.RAID;
 
 public class Main {
     public static void main(String[] args) {
@@ -19,15 +19,7 @@ public class Main {
         int tamanhoBlocos = scanner.nextInt();
 
         // Se for RAID, pedir número de discos
-        int quantidadeDiscos = 1;
-        if (tipoAlocador == 3) {
-            System.out.println("Digite o número de discos para o RAID (mínimo 3): ");
-            quantidadeDiscos = scanner.nextInt();
-            if (quantidadeDiscos < 3) {
-                System.out.println("Usando mínimo de 3 discos para RAID 5");
-                quantidadeDiscos = 3;
-            }
-        }
+        int quantidadeDiscos = 3;
 
         return new SistemaArquivos(tamMemoria, tamanhoBlocos, tipoAlocador, quantidadeDiscos);
     }
@@ -37,11 +29,10 @@ public class Main {
                 Selecione o tipo de alocação a ser realizada:
                 1 - Encadeada
                 2 - FAT
-                3 - RAID 5
                 Escolha uma opção:\t""");
         int opcao = scanner.nextInt();
 
-        if (opcao < 1 || opcao > 3) {
+        if (opcao < 1 || opcao > 2) {
             System.out.println("Opção inválida!");
             return seletorTipoAlocacao(scanner);
         }
@@ -59,7 +50,6 @@ public class Main {
                         "6. Listar arquivos de um diretório\n" +
                         "7. Mostrar estado dos blocos\n" +
                         (sistema.getAlocador() instanceof AlocadorFAT ? "8. Opção exclusiva da FAT\n" : "") +
-                        (sistema.getAlocador() instanceof AlocadorRAID ? "9. Opções RAID\n" : "") +
                         "0. Sair\n" +
                         "Escolha uma opção:\t");
 
@@ -81,46 +71,11 @@ public class Main {
                     System.out.println("Opção inválida!");
                 }
             }
-            case 9 -> {
-                if (sistema.getAlocador() instanceof AlocadorRAID) {
-                    menuRAID(scanner, (AlocadorRAID) sistema.getAlocador(), sistema);
-                } else {
-                    System.out.println("Opção inválida!");
-                }
-            }
             case 0 -> System.exit(0);
             default -> System.out.println("Opção inválida!");
         }
 
         menuPrincipal(scanner, sistema);
-    }
-
-    private static void menuRAID(Scanner scanner, AlocadorRAID alocadorRAID, SistemaArquivos sistema) {
-        System.out.println(
-                "\n========== MENU RAID ==========\n" +
-                        "1. Simular falha de disco\n" +
-                        "2. Mostrar detalhes do RAID\n" +
-                        "3. Ver fragmentação do RAID\n" +
-                        "4. Voltar\n" +
-                        "Escolha uma opção:\t");
-
-        int opcao = scanner.nextInt();
-        scanner.nextLine();
-
-        switch (opcao) {
-            case 1 -> {
-                System.out.println("Digite o número do disco a simular falha (0-" + (alocadorRAID.getQuantidadeDiscos() - 1) + "):");
-                int discoFalho = scanner.nextInt();
-                alocadorRAID.simularFalhaDisco(discoFalho);
-                sistema.mostrarEstadoBlocos();
-            }
-            case 2 -> alocadorRAID.mostrarDetalhesRAID();
-            case 3 -> alocadorRAID.verificarFragmentacaoRAID();
-            case 4 -> { return; }
-            default -> System.out.println("Opção inválida!");
-        }
-
-        menuRAID(scanner, alocadorRAID, sistema);
     }
 
     private static void criarDiretorio(Scanner scanner, SistemaArquivos sistema){

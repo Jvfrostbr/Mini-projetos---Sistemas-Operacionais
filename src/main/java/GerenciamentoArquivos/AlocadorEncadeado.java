@@ -1,88 +1,111 @@
 package GerenciamentoArquivos;
 
+import GerenciamentoEntradaSaida_Parte2.RAID;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public class AlocadorEncadeado implements Alocador {
-    private List<Bloco> blocos;
     private int tamanhoBloco;
+    private RAID raid;
 
     // Construtor:
-    public AlocadorEncadeado(int totalMemoriaKB, int tamanhoBlocoKB) {
+    public AlocadorEncadeado(int tamanhoBlocoKB, RAID raid) {
         this.tamanhoBloco = tamanhoBlocoKB;
-        int totalBlocos = totalMemoriaKB / tamanhoBlocoKB;
-        this.blocos = new ArrayList<>();
-        inicializarAlocador(totalBlocos);
+        this.raid = raid;
     }
 
     // Métodos:
-    private void inicializarAlocador(int totalBlocos){
-        for (int i = 0; i < totalBlocos; i++) {
-            blocos.add(new Bloco(i));
-        }
-    }
-
     @Override
     public int alocarNoBloco(String nome, int tamanhoDadoKB, Object objetoAlocado) {
-        int retorno;
         int blocosNecessarios = calcularBlocosNecessarios(tamanhoDadoKB);
-        List<Integer> livres = new ArrayList<>();
+        List<Bloco> blocosAlocados = new ArrayList<>();
+        int currentIndex = 0;
 
-        for (int i = 0; i < blocos.size() && livres.size() < blocosNecessarios; i++) {
-            if (!blocos.get(i).isOcupado()) {
-                livres.add(blocos.get(i).getId());
-            }
-        }
+        // Busca cíclica por blocos livres no RAID
+        while (blocosAlocados.size() < blocosNecessarios && currentIndex < raid.getAllBlocos().size() * 2) {
+            Bloco bloco = raid.getAllBlocos().get(currentIndex % raid.getAllBlocos().size());
 
-        if (livres.size() < blocosNecessarios) {
-            System.out.println("Erro: Memória insuficiente.");
-            retorno = -1;
-        }
-        else{
-            // Alocação encadeada
-            for (int i = 0; i < livres.size(); i++) {
-                int blocoAtual = livres.get(i);
-                blocos.get(blocoAtual).alocar(nome, objetoAlocado);
-                if (i < livres.size() - 1) {
-                    blocos.get(blocoAtual).setProximoBloco(livres.get(i + 1));
+            if (!bloco.isOcupado()) {
+                try {
+                    bloco = raid.armazenarBloco(bloco.getId(), nome, objetoAlocado);
+                    blocosAlocados.add(bloco);
+                } catch (RuntimeException e) {
+                    System.out.println("Erro ao alocar bloco no RAID: " + e.getMessage());
+                    for (Bloco b : blocosAlocados) {
+                        raid.desalocarFisicamente(b);
+                    }
+                    return -1;
                 }
             }
-            // marcando o fim da cadeia no último bloco
-            blocos.get(livres.getLast()).setProximoBloco(-1);
-            retorno = livres.getFirst();
+            currentIndex++;
         }
-        return retorno;
+
+        if (blocosAlocados.size() < blocosNecessarios) {
+            System.out.println("Espaço insuficiente para alocar '" + nome + "'");
+            for (Bloco b : blocosAlocados) {
+                raid.desalocarFisicamente(b);
+            }
+            return -1;
+        }
+
+        // Encadeia os blocos
+        for (int i = 0; i < blocosAlocados.size() - 1; i++) {
+            blocosAlocados.get(i).setProximoBloco(blocosAlocados.get(i + 1).getId());
+        }
+        blocosAlocados.get(blocosAlocados.size() - 1).setProximoBloco(-1); // Fim da cadeia
+
+        System.out.printf("Arquivo '%s' alocado com %d blocos no RAID.%n", nome, blocosAlocados.size());
+        return blocosAlocados.get(0).getId();
     }
 
     @Override
     public void desalocarBloco(String nome) {
-        for (Bloco bloco : blocos) {
+        List<Bloco> todosBlocos = raid.getAllBlocos();
+        for (Bloco bloco : todosBlocos) {
             if (bloco.isOcupado() && nome.equals(bloco.getNome())) {
-                bloco.desalocar();
+                raid.desalocarFisicamente(bloco);
             }
         }
     }
 
     @Override
-    public void mostrarBlocos(){
-        for (Bloco bloco : blocos) {
-            if (!bloco.isOcupado()) {
-                System.out.printf("Bloco %2d | LIVRE%n", bloco.getId());
-            }
-            else {
-                String tipo;
-                if (bloco.getObjetoAlocado() instanceof Diretorio) {
-                    tipo = "Diretorio";
-                }
-                else {
-                    tipo = "Arquivo";
-                }
-                String nome = bloco.getNome();
-                String prox = bloco.getProximoBloco() == -1 ? "fim" : String.valueOf(bloco.getProximoBloco());
+    public void mostrarBlocos() {
+        if (raid == null) {
+            throw new IllegalStateException("RAID não inicializado no alocador encadeado.");
+        }
 
-                System.out.printf("Bloco %2d | %-9s: %-16s | Próximo: %s%n", bloco.getId(), tipo, nome, prox);
+        System.out.println("Visualização lógica via Blocos:");
+        List<Bloco> todosBlocos = raid.getAllBlocos();
+        for (Bloco bloco : todosBlocos) {
+            String blocoNome = String.format("(%d,%d)", bloco.getId(), bloco.getDiscoId());
+
+            if (!bloco.isOcupado()) {
+                System.out.printf("Bloco %s | LIVRE%n", blocoNome);
+            } else {
+                String tipo = (bloco.getObjetoAlocado() instanceof Diretorio) ? "Diretório" : "Arquivo";
+                String nome = bloco.getNome();
+                Integer proxBloco = bloco.getProximoBloco();
+                String prox = (proxBloco == null || proxBloco == -1) ? "fim" : String.format("(%d,?)", proxBloco);
+                // Caso você tenha o discoId do próximo bloco, poderia buscar e mostrar também
+
+                System.out.printf("Bloco %s | %-9s: %-16s | Próximo: %s%n", blocoNome, tipo, nome, prox);
             }
         }
+
+        System.out.println("Visualização lógica via Encadeamento:");
+        for (Bloco bloco : todosBlocos) {
+            if (bloco.isOcupado()) {
+                String tipo = bloco.getObjetoAlocado() instanceof Diretorio ? "Diretório" : "Arquivo";
+                String blocoNome = String.format("(%d,%d)", bloco.getId(), bloco.getDiscoId());
+                Integer proxBloco = bloco.getProximoBloco();
+                String prox = (proxBloco == null || proxBloco == -1) ? "fim" : String.format("(%d,?)", proxBloco);
+                System.out.printf("Bloco %s | %s: %-16s | Próximo: %s%n", blocoNome, tipo, bloco.getNome(), prox);
+            }
+        }
+
+        System.out.println("Visualização física via RAID:");
+        raid.mostrarBlocos();
     }
 
     @Override
@@ -102,8 +125,14 @@ public class AlocadorEncadeado implements Alocador {
     }
 
     @Override
+    public RAID getRaid() {
+        return raid;
+    }
+
+    @Override
     public int contarBlocosLivres() {
         int livres = 0;
+        List<Bloco> blocos = raid.getAllBlocos();
         for (Bloco bloco : blocos) {
             if (!bloco.isOcupado()) {
                 livres++;

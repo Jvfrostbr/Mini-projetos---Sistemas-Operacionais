@@ -1,5 +1,7 @@
 package GerenciamentoArquivos;
 
+import GerenciamentoEntradaSaida_Parte2.RAID;
+
 public interface Alocador {
     int alocarNoBloco(String nome, int tamanhoDadoKB, Object objetoAlocado);
     void desalocarBloco(String nome);
@@ -7,4 +9,6 @@ public interface Alocador {
     void mostrarBlocos();
     int contarBlocosLivres();
     int calcularBlocosNecessarios(int tamanhoArquivoOuDiretorioKB);
+    RAID getRaid();
+
 }

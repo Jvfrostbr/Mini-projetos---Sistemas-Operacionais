@@ -3,26 +3,27 @@ package GerenciamentoArquivos;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import GerenciamentoEntradaSaida_Parte2.RAID;
 
 /**
  * Implementação de alocador de memória usando tabela FAT (File Allocation Table).
  */
 public class AlocadorFAT implements Alocador {
 
-    private final Bloco[] blocos;
+    private final RAID raid;
+    private final Bloco[] blocos; // Usado para indexar, mas o armazenamento real é feito no RAID
     private final int tamanhoBlocoKB;
     private final int[] tabelaFAT; // -1: livre, -2: EOF, >= 0: próximo bloco
     private final Map<String, Arquivo> tabelaArquivos = new HashMap<>();
 
-    public AlocadorFAT(int totalMemoriaKB, int tamanhoBlocoKB) {
+
+    public AlocadorFAT(int totalMemoriaKB, int tamanhoBlocoKB, RAID raid) {
         int totalBlocos = totalMemoriaKB / tamanhoBlocoKB;
-        this.blocos = new Bloco[totalBlocos];
-        for (int i = 0; i < totalBlocos; i++) {
-            blocos[i] = new Bloco(i);
-        }
-        this.tamanhoBlocoKB = tamanhoBlocoKB;
         this.tabelaFAT = new int[totalBlocos];
+        this.tamanhoBlocoKB = tamanhoBlocoKB;
+        this.blocos = new Bloco[totalBlocos]; // Ainda usamos pra indexar, mas delegamos armazenamento real ao RAID
         Arrays.fill(tabelaFAT, -1);
+        this.raid = raid;
     }
 
     @Override
@@ -33,27 +34,29 @@ public class AlocadorFAT implements Alocador {
 
         int blocosNecessarios = calcularBlocosNecessarios(tamanhoDadoKB);
         int[] blocosAlocados = new int[blocosNecessarios];
-        int index = 0;
+        int blocosAlocadosCount = 0;
+        int currentIndex = 0;
 
-        for (int i = 0; i < blocos.length && index < blocosNecessarios; i++) {
-            if (tabelaFAT[i] == -1) {
-                blocosAlocados[index++] = i;
+        // Busca cíclica por blocos livres
+        while (blocosAlocadosCount < blocosNecessarios && currentIndex < tabelaFAT.length * 2) {
+            int blocoId = currentIndex % tabelaFAT.length; // Garante que volte ao início
+
+            if (tabelaFAT[blocoId] == -1) { // Bloco livre
+                blocosAlocados[blocosAlocadosCount++] = blocoId;
             }
+            currentIndex++;
         }
 
-        if (index < blocosNecessarios) {
+        if (blocosAlocadosCount < blocosNecessarios) {
             System.out.println("Espaço insuficiente para alocar '" + nome + "'");
             return -1;
         }
 
+        // Aloca os blocos no RAID e atualiza a FAT
         for (int i = 0; i < blocosNecessarios; i++) {
             int blocoId = blocosAlocados[i];
-            blocos[blocoId].alocar(nome, objetoAlocado);
-            if (i == blocosNecessarios - 1) {
-                tabelaFAT[blocoId] = -2; // EOF
-            } else {
-                tabelaFAT[blocoId] = blocosAlocados[i + 1];
-            }
+            blocos[blocoId] = raid.armazenarBloco(blocoId, nome, objetoAlocado);
+            tabelaFAT[blocoId] = (i == blocosNecessarios - 1) ? -2 : blocosAlocados[i + 1];
         }
 
         Arquivo arquivo = new Arquivo(nome, tamanhoDadoKB, blocosAlocados[0]);
@@ -70,14 +73,30 @@ public class AlocadorFAT implements Alocador {
             return;
         }
 
-        int bloco = arquivo.getBlocoInicial();
-        while (bloco != -2 && bloco != -1) {
-            int proximo = tabelaFAT[bloco];
-            tabelaFAT[bloco] = -1;
-            blocos[bloco].desalocar();
-            bloco = proximo;
+        int blocoAtual = arquivo.getBlocoInicial();
+        int blocosLiberados = 0;
+
+        while (blocoAtual >= 0 && blocoAtual < tabelaFAT.length) {
+            int proximoBloco = tabelaFAT[blocoAtual];
+
+            // Desaloca fisicamente no RAID
+            if (blocos[blocoAtual] != null && blocos[blocoAtual].isOcupado()) {
+                raid.desalocarFisicamente(blocos[blocoAtual]);
+                blocosLiberados++;
+            }
+
+            // Marca como livre na FAT
+            tabelaFAT[blocoAtual] = -1;
+
+            if (proximoBloco == -2 || proximoBloco == -1) {
+                break;
+            }
+
+            blocoAtual = proximoBloco;
         }
-        System.out.println("Arquivo '" + nome + "' desalocado.");
+
+        System.out.printf("Arquivo '%s' desalocado. %d blocos liberados.%n",
+                nome, blocosLiberados);
     }
 
     @Override
@@ -115,23 +134,41 @@ public class AlocadorFAT implements Alocador {
 
     @Override
     public void mostrarBlocos() {
+        System.out.println("Visualização lógica via FAT:");
         System.out.println("Blocos alocados:");
-        for (Bloco bloco : blocos) {
-            if (!bloco.isOcupado()) {
-                System.out.printf("Bloco %2d | LIVRE%n", bloco.getId());
+
+        if (tabelaArquivos.isEmpty()) {
+            System.out.println("Nenhum bloco alocado.");
+            return;
+        }
+
+        for (int i = 0; i < blocos.length; i++) {
+            Bloco bloco = blocos[i];
+
+            if (bloco == null || !bloco.isOcupado()) {
+                // Se o bloco for null ou não ocupado, mostramos a posição lógica
+                String pos = (bloco != null) ? bloco.getNomeFormatado() : "(" + i + ",?)";
+                System.out.printf("Bloco %7s | LIVRE%n", pos);
             } else {
                 String tipo = (bloco.getObjetoAlocado() instanceof Diretorio) ? "Diretório" : "Arquivo";
-                System.out.printf("Bloco %2d | %s: %s%n", bloco.getId(), tipo, bloco.getNome());
+                System.out.printf("Bloco %7s | %-9s: %-16s%n",
+                        bloco.getNomeFormatado(), tipo, bloco.getNome());
             }
         }
-        System.out.println("Tabela FAT:");
+
+        System.out.println("\n-------------------- Tabela FAT --------------------");
+        System.out.println("Legenda: -1 = LIVRE | -2 = EOF | outro = próximo bloco");
+
         for (int i = 0; i < tabelaFAT.length; i++) {
             String status;
-            if (tabelaFAT[i] == -1) status = "Livre";
+            if (tabelaFAT[i] == -1) status = "LIVRE";
             else if (tabelaFAT[i] == -2) status = "EOF";
             else status = String.valueOf(tabelaFAT[i]);
-            System.out.printf("[%3d] -> %s\n", i, status);
+            System.out.printf("[%3d] -> %s%n", i, status);
         }
+
+        System.out.println("\nVisualização física via RAID:");
+        raid.mostrarBlocos();
     }
 
     @Override
@@ -148,5 +185,10 @@ public class AlocadorFAT implements Alocador {
         int blocos = tamanhoArquivoOuDiretorioKB / tamanhoBlocoKB;
         if (tamanhoArquivoOuDiretorioKB % tamanhoBlocoKB != 0) blocos++;
         return blocos;
+    }
+
+    @Override
+    public RAID getRaid() {
+        return raid;
     }
 }

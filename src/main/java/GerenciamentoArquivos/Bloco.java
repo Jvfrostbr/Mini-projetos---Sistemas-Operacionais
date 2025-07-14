@@ -2,6 +2,7 @@ package GerenciamentoArquivos;
 
 public class Bloco {
     private int id;
+    private int discoId;
     private boolean ocupado;
     private String nome;
     private Integer proximoBloco;
@@ -10,12 +11,21 @@ public class Bloco {
     private Integer valorParidade; // Novo campo para armazenar o valor de paridade
 
     // Construtor:
-    public Bloco(int id) {
+    public Bloco(int id, int discoId) {
         this.id = id;
+        this.discoId = discoId;
         this.ocupado = false;
         this.nome = null;
-        this.proximoBloco = null;
+        this.proximoBloco = -1;
         this.objetoAlocado = null;
+    }
+
+    public int getDiscoId() {
+        return discoId;
+    }
+
+    public String getNomeFormatado() {
+        return "( Bloco" + id + ", Disco" + discoId + ")";
     }
 
     // Métodos:
@@ -38,9 +48,7 @@ public class Bloco {
         this.ocupado = true;
         this.isParidade = true;
         this.valorParidade = valorParidade;
-        this.nome = "PARIDADE_" + valorParidade;
-        this.objetoAlocado = null;
-        this.proximoBloco = null;
+        this.nome = "PARIDADE_" + valorParidade;  // Ou outro identificador único
     }
 
     // Getters e Setters:
