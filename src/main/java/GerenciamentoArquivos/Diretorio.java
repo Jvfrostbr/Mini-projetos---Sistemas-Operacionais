@@ -7,12 +7,16 @@ public class Diretorio {
     private final String nome;
     private final List<Arquivo> arquivos;
     private int blocoAlocado;
+    private boolean protegido;
+    private String senha;
 
     // Construtor:
-    public Diretorio(String nome, int blocoAlocado) {
+    public Diretorio(String nome, int blocoAlocado, boolean protegido, String senha) {
         this.nome = nome;
         this.arquivos = new ArrayList<>();
         this.blocoAlocado = blocoAlocado;
+        this.protegido = protegido;
+        this.senha = senha;
     }
 
     // Métodos:
@@ -72,5 +76,21 @@ public class Diretorio {
 
     public void setBlocoAlocado(int blocoAlocado) {
         this.blocoAlocado = blocoAlocado;
+    }
+
+    public boolean isProtegido() {
+        return protegido;
+    }
+
+    public void setProtegido(boolean protegido) {
+        this.protegido = protegido;
+    }
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
     }
 }

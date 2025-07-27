@@ -2,6 +2,7 @@ package GerenciamentoArquivos;
 
 import java.util.*;
 import GerenciamentoEntradaSaida_Parte2.RAID;
+import java.util.Scanner;
 
 public class SistemaArquivos {
 
@@ -9,11 +10,12 @@ public class SistemaArquivos {
     private final Alocador alocador;
     private final int tamanhoBloco;
     private final RAID RAID;
+    private Scanner scanner;
 
     // Construtor:
     public SistemaArquivos(int memoriaTotalKB, int tamanhoBloco, int tipoAlocador, int numeroDiscos) {
         this.diretorios = new HashMap<>();
-        this.diretorios.put("[Raiz]", new Diretorio("[Raiz]", -1)); // Diretório raiz
+        this.diretorios.put("[Raiz]", new Diretorio("[Raiz]", -1, false, null)); // Diretório raiz
         this.tamanhoBloco = tamanhoBloco;
         this.RAID = new RAID(memoriaTotalKB, tamanhoBloco, numeroDiscos);
 
@@ -26,12 +28,12 @@ public class SistemaArquivos {
     }
 
     // Métodos:
-    public void criarDiretorio(String nomeDiretorio) {
+    public void criarDiretorio(String nomeDiretorio, boolean protegido, String senha) {
         if (diretorios.containsKey(nomeDiretorio)) {
             System.out.println("Erro: Já existe um arquivo ou diretório chamado " + nomeDiretorio);
         }
         else {
-            Diretorio novoDiretorio = new Diretorio(nomeDiretorio, -1); // bloco ainda não definido
+            Diretorio novoDiretorio = new Diretorio(nomeDiretorio, -1, protegido, senha); // bloco ainda não definido
             int blocoDiretorio = alocador.alocarNoBloco(nomeDiretorio, tamanhoBloco, novoDiretorio);
             if (blocoDiretorio == -1) {
                 System.out.println("Erro: Memória insuficiente para alocar diretório.");
@@ -55,41 +57,55 @@ public class SistemaArquivos {
 
         if (diretorio == null) {
             System.out.println("Erro: Diretório " + nomeDiretorio + " não encontrado.");
+            return;
         }
-        else {
-            if (!diretorio.getArquivos().isEmpty()) {
-                System.out.printf("ATENÇÃO: O diretório " + nomeDiretorio + " contém arquivos\n" +
-                        "ao apagar o diretório todos os arquivos contidos nele também serão apagados\n" +
-                        "Deseja realmente apagar o diretório?\n" +
-                        "1 - Sim \n" +
-                        "2 - Não \n" +
-                        "Escolha uma opção: ");
-                int opcao = scanner.nextInt();
 
-                if (opcao == 1) {
-                    for (Arquivo arquivo : diretorio.getArquivos()) {
-                        alocador.desalocarBloco(arquivo.getNome());
-                        excluirArquivo(nomeDiretorio, arquivo.getNome());
-                    }
-                    alocador.desalocarBloco(nomeDiretorio);
-                    diretorios.remove(nomeDiretorio);
-                    System.out.printf("Diretório '%s' removido com sucesso.%n", nomeDiretorio);
-                    mostrarEstadoBlocos();
-                }
-                else {
-                    System.out.println("Operação cancelada.");
-                }
-            }
-            else {
-                alocador.desalocarBloco(nomeDiretorio);
-                diretorios.remove(nomeDiretorio);
-                System.out.printf("Diretório '%s' removido com sucesso.%n", nomeDiretorio);
-                mostrarEstadoBlocos();
+        if (diretorio.isProtegido()) {
+            System.out.println("Esse diretório é protegido, digite a senha para poder excluí-lo.");
+            String senha = scanner.nextLine();
+            if (!senha.equals(diretorio.getSenha())) {
+                System.out.println("Senha incorreta. Operação cancelada.");
+                return;
             }
         }
+
+        if (!diretorio.getArquivos().isEmpty()) {
+            System.out.println("ATENÇÃO: O diretório " + nomeDiretorio + " contém arquivos.");
+            System.out.println("Ao apagar o diretório, todos os arquivos contidos nele também serão apagados.");
+            System.out.println("Deseja realmente apagar o diretório?");
+            System.out.println("1 - Sim");
+            System.out.println("2 - Não");
+            System.out.print("Escolha uma opção: ");
+
+            int opcao = scanner.nextInt();
+            scanner.nextLine(); // limpar o buffer do scanner
+
+            if (opcao != 1) {
+                System.out.println("Operação cancelada.");
+                return;
+            }
+
+            boolean sucesso = true;
+            for (Arquivo arquivo : diretorio.getArquivos()) {
+                alocador.desalocarBloco(arquivo.getNome());
+                if (!excluirArquivo(nomeDiretorio, arquivo.getNome(), true)) {
+                    System.out.println("Erro ao excluir arquivo: " + arquivo.getNome());
+                    sucesso = false;
+                }
+            }
+            if (!sucesso) {
+                System.out.println("Alguns arquivos não foram excluídos. Diretório não removido.");
+                return;
+            }
+        }
+
+        alocador.desalocarBloco(nomeDiretorio);
+        diretorios.remove(nomeDiretorio);
+        System.out.printf("Diretório '%s' removido com sucesso.%n", nomeDiretorio);
+        mostrarEstadoBlocos();
     }
 
-    public void criarArquivo(String nomeDir, String nomeArquivo, int tamanhoArquivoKB) {
+    public void criarArquivo(String nomeDir, String nomeArquivo, int tamanhoArquivoKB, String conteudo, boolean protegido, String senha) {
         Diretorio diretorio = diretorios.get(nomeDir);
 
         if (diretorio == null && !nomeDir.isEmpty()) {
@@ -100,7 +116,7 @@ public class SistemaArquivos {
         if (diretorio.possuiArquivo(nomeArquivo) || diretorios.containsKey(nomeArquivo)) {
             System.out.println("Erro: Já existe um arquivo ou diretório chamado " + nomeArquivo);
         } else{
-            Arquivo novoArquivo = new Arquivo(nomeArquivo, tamanhoArquivoKB, -1);
+            Arquivo novoArquivo = new Arquivo(nomeArquivo, tamanhoArquivoKB, -1, conteudo, protegido, senha);
             int blocoInicial = alocador.alocarNoBloco(nomeArquivo, tamanhoArquivoKB, novoArquivo); // bloco ainda não definido
 
             // se blocoInicial == -1 → Alocação do arquivo falhou
@@ -122,25 +138,71 @@ public class SistemaArquivos {
         }
     }
 
-    public void excluirArquivo(String nomeDir, String nomeArquivo) {
+    public boolean excluirArquivo(String nomeDir, String nomeArquivo, boolean excluindoDir) {
         Diretorio diretorio = diretorios.get(nomeDir);
         if (diretorio == null & !nomeDir.isEmpty()) {
             System.out.println("Erro: Diretório inexistente.");
-            return;
+            return false;
         }
         diretorio = diretorio == null ? diretorios.get("[Raiz]") : diretorio; // se o diretório não existir, cria no raiz
+        if (diretorio.isProtegido() && !excluindoDir){
+            System.out.println("Esse diretório é protegido, digite a senha:");
+            String senha = scanner.nextLine();
+            if (!senha.equals(diretorio.getSenha())){
+                System.out.println("Senha incorreta.");
+                return false;
+            }
+        }
         Arquivo arq = diretorio.buscarArquivo(nomeArquivo);
         if (arq == null) {
             System.out.println("Erro: Arquivo não encontrado em " + nomeDir);
         }
-        else{
-            alocador.desalocarBloco(nomeArquivo);
-            diretorio.removerArquivo(nomeArquivo);
-            alocador.verificarFragmentacaoInterna(nomeArquivo, arq.getTamanho());
-            System.out.println("Arquivo removido com sucesso");
-            mostrarEstadoBlocos();
+
+        if (arq.isProtegido()){
+            System.out.println("Esse arquivo é protegido, digite a senha:");
+            String senha = scanner.nextLine();
+            if (!senha.equals(arq.getSenha())){
+                System.out.println("Senha incorreta.");
+                return false;
+            }
         }
+        alocador.desalocarBloco(nomeArquivo);
+        diretorio.removerArquivo(nomeArquivo);
+        alocador.verificarFragmentacaoInterna(nomeArquivo, arq.getTamanho());
+        System.out.println("Arquivo removido com sucesso");
+        mostrarEstadoBlocos();
+        return true;
     }
+
+    public void visualizarConteudoArquivo(String nomeDir, String nomeArquivo, Scanner scanner) {
+        Diretorio diretorio = diretorios.get(nomeDir);
+
+        if (diretorio == null && !nomeDir.isEmpty()) {
+            System.out.println("Erro: Diretório inexistente.");
+            return;
+        }
+
+        diretorio = diretorio == null ? diretorios.get("[Raiz]") : diretorio; // usa raiz como fallback
+
+        Arquivo arquivo = diretorio.buscarArquivo(nomeArquivo);
+        if (arquivo == null) {
+            System.out.println("Erro: Arquivo '" + nomeArquivo + "' não encontrado no diretório '" + nomeDir + "'.");
+            return;
+        }
+
+        if (arquivo.isProtegido()) {
+            System.out.print("Esse arquivo é protegido. Digite a senha para visualizar o conteúdo: ");
+            String senha = scanner.nextLine();
+            if (!senha.equals(arquivo.getSenha())) {
+                System.out.println("Senha incorreta. Acesso negado.");
+                return;
+            }
+        }
+
+        System.out.println("Conteúdo do arquivo '" + nomeArquivo + "':");
+        System.out.println(arquivo.getConteudo());
+    }
+
 
     public void listarDiretorios() {
         if (diretorios.isEmpty()) {
@@ -150,8 +212,12 @@ public class SistemaArquivos {
         for (Diretorio diretorio : diretorios.values()) {
             if (!diretorio.getNome().equals("[Raiz]")) {
                 System.out.println(diretorio.getNome());
-                for (Arquivo arquivo : diretorio.getArquivos()) {
-                    System.out.println("  └── " + arquivo.getNome());
+                if (!diretorio.isProtegido()){
+                    for (Arquivo arquivo : diretorio.getArquivos()) {
+                        System.out.println("  └── " + arquivo.getNome());
+                    }
+                } else {
+                    System.out.println("   Diretório protegido");
                 }
             } else {
                 for (Arquivo arquivo : diretorio.getArquivos()) {
@@ -161,11 +227,19 @@ public class SistemaArquivos {
         }
     }
 
-    public void listarConteudoDiretorio(String nomeDir) {
+    public void listarConteudoDiretorio(String nomeDir, Scanner scanner) {
         Diretorio diretorio = diretorios.get(nomeDir);
         if (diretorio == null & !nomeDir.isEmpty()) {
             System.out.println("Erro: Diretório inexistente");
             return;
+        }
+        if (diretorio.isProtegido()) {
+            System.out.print("Esse diretório é protegido. Digite a senha para visualizar o conteúdo: ");
+            String senha = scanner.nextLine();
+            if (!senha.equals(diretorio.getSenha())) {
+                System.out.println("Senha incorreta. Acesso negado.");
+                return;
+            }
         }
         diretorio = diretorio == null ? diretorios.get("[Raiz]") : diretorio; // se o diretório não existir, cria no raiz
         System.out.println("Diretório " + nomeDir + ":");

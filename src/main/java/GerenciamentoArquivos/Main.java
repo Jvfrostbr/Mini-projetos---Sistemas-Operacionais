@@ -46,10 +46,11 @@ public class Main {
                         "2. Excluir diretório\n" +
                         "3. Criar arquivo\n" +
                         "4. Excluir arquivo\n" +
-                        "5. Listar diretórios\n" +
-                        "6. Listar arquivos de um diretório\n" +
-                        "7. Mostrar estado dos blocos\n" +
-                        (sistema.getAlocador() instanceof AlocadorFAT ? "8. Opção exclusiva da FAT\n" : "") +
+                        "5. Visualizar conteúdo de um arquivo\n" +
+                        "6. Listar diretórios\n" +
+                        "7. Listar arquivos de um diretório\n" +
+                        "8. Mostrar estado dos blocos\n" +
+                        (sistema.getAlocador() instanceof AlocadorFAT ? "9. Opção exclusiva da FAT\n" : "") +
                         "0. Sair\n" +
                         "Escolha uma opção:\t");
 
@@ -61,10 +62,11 @@ public class Main {
             case 2 -> deletarDiretorio(scanner, sistema);
             case 3 -> criarArquivo(scanner, sistema);
             case 4 -> deletarArquivo(scanner, sistema);
-            case 5 -> sistema.listarDiretorios();
-            case 6 -> listarArquivosDiretorio(scanner, sistema);
-            case 7 -> sistema.mostrarEstadoBlocos();
-            case 8 -> {
+            case 5 -> visualizarArquivo(scanner, sistema);
+            case 6 -> sistema.listarDiretorios();
+            case 7 -> listarArquivosDiretorio(scanner, sistema);
+            case 8 -> sistema.mostrarEstadoBlocos();
+            case 9 -> {
                 if (sistema.getAlocador() instanceof AlocadorFAT) {
                     sistema.mostrarFragmentacaoInternaTotal();
                 } else {
@@ -78,10 +80,22 @@ public class Main {
         menuPrincipal(scanner, sistema);
     }
 
-    private static void criarDiretorio(Scanner scanner, SistemaArquivos sistema){
+    private static void criarDiretorio(Scanner scanner, SistemaArquivos sistema) {
         System.out.print("Digite o nome do diretório a ser criado: ");
         String nomeDiretorio = scanner.nextLine();
-        sistema.criarDiretorio(nomeDiretorio);
+
+        System.out.print("Você quer proteger seu diretório? (y/n): ");
+        String resposta = scanner.nextLine().trim().toLowerCase();
+
+        boolean protegido = resposta.equals("y");
+
+        String senha = null;
+        if (protegido) {
+            System.out.print("Digite a senha para proteger o diretório: ");
+            senha = scanner.nextLine();
+        }
+
+        sistema.criarDiretorio(nomeDiretorio, protegido, senha);
     }
 
     private static void deletarDiretorio(Scanner scanner, SistemaArquivos sistema){
@@ -99,23 +113,46 @@ public class Main {
         String nomeArq = scanner.nextLine();
         System.out.print("Digite o tamanho do arquivo (em KB): ");
         int tamanho = scanner.nextInt();
+        System.out.println("Digite o conteúdo do arquivo:");
+        String conteudo = scanner.nextLine();
+        System.out.println("Quer proteger seu arquivo?(y/n)");
+        String resposta = scanner.nextLine().trim().toLowerCase();
+        boolean protegido = resposta.equals("y");
 
-        sistema.criarArquivo(nomeDir, nomeArq, tamanho);
+        String senha = null;
+        if (protegido) {
+            System.out.print("Digite a senha para proteger o diretório: ");
+            senha = scanner.nextLine();
+        }
+        sistema.criarArquivo(nomeDir, nomeArq, tamanho, conteudo, protegido, senha);
     }
 
     private static void deletarArquivo(Scanner scanner, SistemaArquivos sistema){
         sistema.listarDiretorios();
         System.out.print("\nDigite o nome do diretório: ");
         String nomeDir = scanner.nextLine();
-        sistema.listarConteudoDiretorio(nomeDir);
+        sistema.listarConteudoDiretorio(nomeDir, scanner);
         System.out.print("\nDigite o nome do arquivo: ");
         String nomeArq = scanner.nextLine();
-        sistema.excluirArquivo(nomeDir, nomeArq);
+        sistema.excluirArquivo(nomeDir, nomeArq, false);
     }
 
     private static void listarArquivosDiretorio(Scanner scanner, SistemaArquivos sistema){
         System.out.print("Digite o nome do diretório: ");
         String nomeDir = scanner.nextLine();
-        sistema.listarConteudoDiretorio(nomeDir);
+        sistema.listarConteudoDiretorio(nomeDir, scanner);
     }
+
+    private static void visualizarArquivo(Scanner scanner, SistemaArquivos sistema){
+        sistema.listarDiretorios();
+        System.out.print("\nDigite o nome do diretório: ");
+        String nomeDir = scanner.nextLine();
+        sistema.listarConteudoDiretorio(nomeDir, scanner);
+
+        System.out.print("\nDigite o nome do arquivo que deseja visualizar: ");
+        String nomeArq = scanner.nextLine();
+
+        sistema.visualizarConteudoArquivo(nomeDir, nomeArq, scanner);
+    }
+
 }
