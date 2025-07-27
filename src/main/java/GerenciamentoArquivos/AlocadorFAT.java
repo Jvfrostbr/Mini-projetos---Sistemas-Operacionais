@@ -29,7 +29,8 @@ public class AlocadorFAT implements Alocador {
     @Override
     public int alocarNoBloco(String nome, int tamanhoDadoKB, Object objetoAlocado) {
         if (tabelaArquivos.containsKey(nome)) {
-            throw new IllegalArgumentException("Já existe alocação com nome: " + nome);
+            System.out.println("Já existe alocação com nome: " + nome);
+            return 0 ;
         }
 
         int blocosNecessarios = calcularBlocosNecessarios(tamanhoDadoKB);

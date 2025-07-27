@@ -113,6 +113,7 @@ public class Main {
         String nomeArq = scanner.nextLine();
         System.out.print("Digite o tamanho do arquivo (em KB): ");
         int tamanho = scanner.nextInt();
+        scanner.nextLine();
         System.out.println("Digite o conteúdo do arquivo:");
         String conteudo = scanner.nextLine();
         System.out.println("Quer proteger seu arquivo?(y/n)");
@@ -121,7 +122,7 @@ public class Main {
 
         String senha = null;
         if (protegido) {
-            System.out.print("Digite a senha para proteger o diretório: ");
+            System.out.print("Digite a senha para proteger o arquivo: ");
             senha = scanner.nextLine();
         }
         sistema.criarArquivo(nomeDir, nomeArq, tamanho, conteudo, protegido, senha);

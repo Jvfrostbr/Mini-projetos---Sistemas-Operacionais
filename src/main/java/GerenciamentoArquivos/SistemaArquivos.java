@@ -18,6 +18,7 @@ public class SistemaArquivos {
         this.diretorios.put("[Raiz]", new Diretorio("[Raiz]", -1, false, null)); // Diretório raiz
         this.tamanhoBloco = tamanhoBloco;
         this.RAID = new RAID(memoriaTotalKB, tamanhoBloco, numeroDiscos);
+        this.scanner = new Scanner(System.in);
 
         if (tipoAlocador == 1) {
             this.alocador = new AlocadorEncadeado(tamanhoBloco, RAID);
@@ -113,6 +114,16 @@ public class SistemaArquivos {
                 return;
         }
         diretorio = diretorio == null ? diretorios.get("[Raiz]") : diretorio; // se o diretório não existir, cria no raiz
+
+        if (diretorio.isProtegido()) {
+            System.out.println("Esse diretório é protegido, digite a senha:");
+            String tentativa = scanner.nextLine();
+            if (!tentativa.equals(diretorio.getSenha())){
+                System.out.println("Senha incorreta. Criação de arquivo abortada.");
+                return;
+            }
+        }
+
         if (diretorio.possuiArquivo(nomeArquivo) || diretorios.containsKey(nomeArquivo)) {
             System.out.println("Erro: Já existe um arquivo ou diretório chamado " + nomeArquivo);
         } else{
@@ -233,7 +244,7 @@ public class SistemaArquivos {
             System.out.println("Erro: Diretório inexistente");
             return;
         }
-        if (diretorio.isProtegido()) {
+        if (diretorio != null && diretorio.isProtegido()) {
             System.out.print("Esse diretório é protegido. Digite a senha para visualizar o conteúdo: ");
             String senha = scanner.nextLine();
             if (!senha.equals(diretorio.getSenha())) {
