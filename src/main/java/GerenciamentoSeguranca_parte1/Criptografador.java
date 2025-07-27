@@ -3,6 +3,8 @@ package GerenciamentoSeguranca_parte1;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public class Criptografador {
@@ -27,50 +29,33 @@ public class Criptografador {
         return resultado.toString();
     }
 
-    public String substituicao(String senha) {
-        String alfabeto = "abcdefghijklmnopqrstuvwxyz";
-        String substitutoAlf = "qazwsxedcrfvtgbyhnujmikolp";
-        String numeros = "1234567890";
-        String substitutoNum = "7418529630";
+    public String cifraPermutacaoMais2Deslocamentos(String senha, List<Integer> permutacao, int[] deslocamentos) {
+        char[] rearranjado = new char[8];
+        for (int i = 0; i < 8; i++) {
+            rearranjado[i] = senha.charAt(permutacao.get(i));
+        }
 
         StringBuilder resultado = new StringBuilder();
-
-        for (char c : senha.toLowerCase().toCharArray()) {
-            int indexAlf = alfabeto.indexOf(c);
-            int indexNum = numeros.indexOf(c);
-
-            if (indexAlf != -1) {
-                resultado.append(substitutoAlf.charAt(indexAlf));
-            } else if (indexNum != -1) {
-                resultado.append(substitutoNum.charAt(indexNum));
-            } else {
-                resultado.append(c); // mantém outros caracteres intactos
-            }
+        for (int i = 0; i < 8; i++) {
+            int blocoIndex = i / 4; // 0 para i=0..3, 1 para i=4..7
+            int base = 32, range = 95;
+            char cifrado = (char) ((rearranjado[i] - base + deslocamentos[blocoIndex]) % range + base);
+            resultado.append(cifrado);
         }
+
         return resultado.toString();
     }
 
-    public String hashSHA256(String senha) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(senha.getBytes());
-            return Base64.getEncoder().encodeToString(hash);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Erro ao gerar SHA-256", e);
-        }
-    }
+    public String cifraSubstituicaoDeslocada(String senha, Map<Character, Character> mapaSubstituicao, int[] deslocamentos) {
+        StringBuilder resultado = new StringBuilder();
+        for (int i = 0; i < senha.length(); i++) {
+            char original = senha.charAt(i);
+            char substituido = mapaSubstituicao.getOrDefault(original, original);
 
-    public String hashSHA256ComSalt(String senha, String salt) {
-        return hashSHA256(salt + senha);
-    }
-
-    public String gerarSalt(int tamanho) {
-        String chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-        StringBuilder salt = new StringBuilder();
-        Random random = new Random();
-        for (int i = 0; i < tamanho; i++) {
-            salt.append(chars.charAt(random.nextInt(chars.length())));
+            int base = 32, range = 95;
+            char deslocado = (char) ((substituido - base + deslocamentos[i]) % range + base);
+            resultado.append(deslocado);
         }
-        return salt.toString();
+        return resultado.toString();
     }
 }
