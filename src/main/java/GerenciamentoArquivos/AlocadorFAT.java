@@ -14,7 +14,7 @@ public class AlocadorFAT implements Alocador {
     private final Bloco[] blocos; // Usado para indexar, mas o armazenamento real é feito no RAID
     private final int tamanhoBlocoKB;
     private final int[] tabelaFAT; // -1: livre, -2: EOF, >= 0: próximo bloco
-    private final Map<String, Arquivo> tabelaArquivos = new HashMap<>();
+    private final Map<String, Object> tabelaArquivos = new HashMap<>();
 
 
     public AlocadorFAT(int totalMemoriaKB, int tamanhoBlocoKB, RAID raid) {
@@ -59,15 +59,14 @@ public class AlocadorFAT implements Alocador {
             tabelaFAT[blocoId] = (i == blocosNecessarios - 1) ? -2 : blocosAlocados[i + 1];
         }
 
-        Arquivo arquivo = new Arquivo(nome, tamanhoDadoKB, blocosAlocados[0]);
-        tabelaArquivos.put(nome, arquivo);
+        tabelaArquivos.put(nome, objetoAlocado);
         System.out.println("Arquivo '" + nome + "' alocado. Bloco inicial: " + blocosAlocados[0]);
         return blocosAlocados[0];
     }
 
     @Override
     public void desalocarBloco(String nome) {
-        Arquivo arquivo = tabelaArquivos.remove(nome);
+        Arquivo arquivo = (Arquivo) (tabelaArquivos.remove(nome));
         if (arquivo == null) {
             System.out.println("Arquivo não encontrado: " + nome);
             return;
@@ -101,7 +100,7 @@ public class AlocadorFAT implements Alocador {
 
     @Override
     public void verificarFragmentacaoInterna(String nome, int tamanhoKB) {
-        Arquivo arquivo = tabelaArquivos.get(nome);
+        Arquivo arquivo = (Arquivo)(tabelaArquivos.get(nome));
         if (arquivo == null) {
             System.out.println("Arquivo não encontrado: " + nome);
             return;
@@ -118,8 +117,8 @@ public class AlocadorFAT implements Alocador {
     public void verificarFragmentacaoInternaTotal() {
         int totalFragmentacao = 0;
 
-        for (Arquivo arquivo : tabelaArquivos.values()) {
-            int tamanhoKB = arquivo.getTamanho();
+        for (Object arquivo : tabelaArquivos.values()) {
+            int tamanhoKB = ((Arquivo)(arquivo)).getTamanho();
             int blocosUsados = calcularBlocosNecessarios(tamanhoKB);
             int cheio = (blocosUsados - 1) * tamanhoBlocoKB;
             int usadoNoUltimo = tamanhoKB - cheio;
