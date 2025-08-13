@@ -31,7 +31,7 @@ public class ProcessoPaginacao {
         boolean aleatorio = tipoRefenciaPaginas.equals("Aleatório");
 
         // Gera referências para simular execução contínua
-        for (int i = 0; i < numPaginas + 5; i++) {
+        for (int i = 0; i < numPaginas; i++) {
             if (aleatorio) {
                 referenciasPaginas.add(rand.nextInt(numPaginas));
             } else {

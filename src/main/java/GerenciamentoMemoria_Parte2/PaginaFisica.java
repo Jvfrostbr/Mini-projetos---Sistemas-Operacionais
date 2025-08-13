@@ -1,6 +1,6 @@
 package GerenciamentoMemoria_Parte2;
 
-public class PaginaFisica {
+public class PaginaFisica implements Pagina {
     private int idProcesso;
     private String nome;
     private boolean bitUso;
@@ -21,10 +21,6 @@ public class PaginaFisica {
     }
 
     //GETS AND SETS
-    public int getIdProcesso() {
-        return idProcesso;
-    }
-
     public String getNome() {
         return nome;
     }
@@ -38,5 +34,15 @@ public class PaginaFisica {
     }
     public long getLastUsedTime() {
         return ultimoTempoUsado;
+    }
+
+    @Override
+    public int getId() {
+        return this.id;
+    }
+
+    @Override
+    public int getIdProcesso() {
+        return this.idProcesso;
     }
 }

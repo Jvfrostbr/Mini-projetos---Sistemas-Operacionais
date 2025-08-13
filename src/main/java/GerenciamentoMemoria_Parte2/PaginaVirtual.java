@@ -1,6 +1,6 @@
 package GerenciamentoMemoria_Parte2;
 
-public class PaginaVirtual {
+public class PaginaVirtual  implements Pagina{
     private int idProcesso;
     private String nome;
     private int id;
@@ -15,11 +15,17 @@ public class PaginaVirtual {
     //MÉTODOS:
 
     //GETS AND SETS
-    public int getIdProcesso() {
-        return idProcesso;
-    }
-
     public String getNome() {
         return nome;
+    }
+
+    @Override
+    public int getId() {
+        return this.id;
+    }
+
+    @Override
+    public int getIdProcesso() {
+        return this.idProcesso;
     }
 }

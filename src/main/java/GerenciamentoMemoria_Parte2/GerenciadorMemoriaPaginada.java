@@ -8,6 +8,7 @@ public class GerenciadorMemoriaPaginada {
     private int numeroPaginasVirtuais;
     private int limiteFisicasPorProcesso;   // constante que limita o número de paginas alocadas na memória física
     private int pageMisses;                 // Contador de page misses
+    private int pageHit;
     private int ponteiroRelogio;            // Ponteiro utilizado pelo algoritmo do Relógio
     private PaginaFisica[] memoriaFisica;
     private PaginaVirtual[] memoriaVirtual;
@@ -26,6 +27,7 @@ public class GerenciadorMemoriaPaginada {
         this.filaProcessos = new LinkedList<>();
         this.mapaPaginaVirtualFisica = new LinkedHashMap<>();
         this.pageMisses = 0;
+        this.pageHit = 0;
         this.ponteiroRelogio = 0;
         this.limiteFisicasPorProcesso = limiteFisicasPorProcesso;
         this.FIFOPaginaFisicas = new LinkedList<>();
@@ -47,8 +49,8 @@ public class GerenciadorMemoriaPaginada {
 
         int paginasFisicasAlocadas = 0;
         for (int i = 0; i < paginasNecessarias; i++) {
-            PaginaFisica paginaFisica = new PaginaFisica(i + 1 + "PgF | " + processo.getNome(), processo.getId(), i );
-            PaginaVirtual paginaVirtual = new PaginaVirtual(i + 1 + "PgV | " + processo.getNome(), processo.getId(), i );
+            PaginaFisica paginaFisica = new PaginaFisica(i + 1 + "PgF | " + processo.getNome(), processo.getId(), i);
+            PaginaVirtual paginaVirtual = new PaginaVirtual(i + 1 + "PgV | " + processo.getNome(), processo.getId(), i);
 
             boolean alocada = false;
 
@@ -106,20 +108,6 @@ public class GerenciadorMemoriaPaginada {
         }
     }
 
-    private List<PaginaFisica> listarPaginasFisicasProcesso(ProcessoPaginacao processo) {
-        List<PaginaFisica> paginasDoProcesso = new ArrayList<>();
-
-        for (Map.Entry<PaginaVirtual, PaginaFisica> entrada : mapaPaginaVirtualFisica.entrySet()) {
-            PaginaFisica pf = entrada.getValue();
-
-            if (pf != null && pf.getIdProcesso() == processo.getId()) {
-                paginasDoProcesso.add(pf);
-            }
-        }
-
-        return paginasDoProcesso;
-    }
-
     public void executarSimulacao(String algoritmo) {
         for (ProcessoPaginacao processo : filaProcessos) {
 
@@ -127,14 +115,18 @@ public class GerenciadorMemoriaPaginada {
             List<Integer> referencias = processo.getReferenciasPaginas();
 
             for (int indicePaginaReferenciada : referencias) {
-                // Mapeia a página virtual para sua correspondente página física
-                PaginaVirtual paginaVirtualRequisitada = memoriaVirtual[indicePaginaReferenciada];
-                PaginaFisica paginaFisicaRequisitada = mapaPaginaVirtualFisica.get(paginaVirtualRequisitada);
+                Pagina paginaEncontrada = ProcurarPaginaNaMemoria(indicePaginaReferenciada, processo.getId(), memoriaFisica);
 
-                if(!paginaFisicaRequisitada.getBitUso()){
-                    boolean paginaEncontrada = verificarPaginaMemoriaFisica(paginaFisicaRequisitada, memoriaFisica);
+                // Se a paǵina não foi encontrada na memória fisica
+                if (paginaEncontrada == null) {
+                    // Procura a página virtual pelo indice
+                    Pagina paginaRequisitada = ProcurarPaginaNaMemoria(indicePaginaReferenciada, processo.getId(), memoriaVirtual);
+                    PaginaVirtual paginaVirtualRequisitada = (PaginaVirtual) paginaRequisitada;
 
-                    if (!paginaEncontrada) {
+                    // Obtém a página física correspondente pelo map
+                    PaginaFisica paginaFisicaRequisitada = mapaPaginaVirtualFisica.get(paginaVirtualRequisitada);
+
+                    if(!paginaFisicaRequisitada.getBitUso()){
                         // Verifica se há ao menos 1 índice livre na memória fisica para alocar a página física
                         int indiceLivre = encontrarIndiceLivreMemoria(memoriaFisica);
 
@@ -149,15 +141,20 @@ public class GerenciadorMemoriaPaginada {
                             // Memória cheia, aplica substituição
                             pageMisses++;
                             PaginaFisica paginaFisicaRemovida = substituirPagina(algoritmo, paginaFisicaRequisitada);
+                            int indicePagina = procurarIndicePagina(paginaVirtualRequisitada, memoriaVirtual);
+                            memoriaVirtual[indicePagina] = null;           // Remove a página da memória virtual
                             exibirEstadoMemoria(processo, paginaFisicaRemovida, paginaFisicaRequisitada, algoritmo, paginaFisicaRequisitada);
                             paginaFisicaRemovida.setBitUso(false);
                         }
                         FIFOPaginaFisicas.add(paginaFisicaRequisitada);   // Atualiza a fila de páginas alocadas na memória física
+                        paginaFisicaRequisitada.setBitUso(true);
                     }
-                    else{
-                        exibirEstadoMemoria(processo, null, null, algoritmo, paginaFisicaRequisitada);
-                    }
-                    paginaFisicaRequisitada.setBitUso(true);
+                }
+                else{
+                    PaginaFisica paginaFisica = (PaginaFisica) paginaEncontrada;
+                    exibirEstadoMemoria(processo, null, null, algoritmo, paginaFisica);
+                    paginaFisica.setBitUso(true);
+                    pageHit++;
                 }
             }
             // Quando a ordem de referências de um processo terminar
@@ -168,12 +165,14 @@ public class GerenciadorMemoriaPaginada {
     }
 
 
-    private boolean verificarPaginaMemoriaFisica(PaginaFisica paginaFisica, PaginaFisica[] memoria) {
-        boolean paginaEncontrada = false;
+    private Pagina ProcurarPaginaNaMemoria(int indice, int idProcesso, Pagina[] memoria) {
+        Pagina paginaEncontrada = null;
 
-        for (int i = 0; i < memoria.length && !paginaEncontrada; i++) {
-            if (paginaFisica != null && paginaFisica.equals(memoria[i])) {
-                paginaEncontrada = true;
+        for (int i = 0; i < memoria.length && paginaEncontrada == null; i++) {
+            Pagina pagina = memoria[i];
+
+            if (pagina != null && indice == pagina.getId() && idProcesso == pagina.getIdProcesso()) {
+                paginaEncontrada = pagina;
             }
         }
         return paginaEncontrada;
@@ -306,9 +305,9 @@ public class GerenciadorMemoriaPaginada {
 
         //Exibição do estado atual das memórias fisica e vitual
         System.out.println("----- Memória Física -----");
-        exibirMatrizMemoria(memoriaFisica, 9);
+        exibirMatrizMemoria(memoriaFisica, 10);
         System.out.println("\n----- Memória Virtual -----");
-        exibirMatrizMemoria(memoriaVirtual, 9);
+        exibirMatrizMemoria(memoriaVirtual, 10);
 
         // Exibição de infos adicionais dos processos e paginas
         System.out.println("\n- Processo em execução: " + processoAtual.getNome());
@@ -316,6 +315,7 @@ public class GerenciadorMemoriaPaginada {
         System.out.println("- Página removida da memória física: " + (paginaFisicaRemovida != null? paginaFisicaRemovida.getNome() : "Nenhuma"));
         System.out.println("- Página adicionada à memória física: " + (paginaFisicaAdicionada != null ? paginaFisicaAdicionada.getNome() : "Nenhuma"));
         System.out.println("- Total de Page Misses: " + pageMisses);
+        System.out.println("- Total de Page hit: " + pageHit);
         System.out.println("- Algoritmo selecionado: " + algoritmo);
 
         // Calculando informações adicionais das memórias
@@ -335,7 +335,7 @@ public class GerenciadorMemoriaPaginada {
         System.out.println("- Memória Virtual Livre: " + kbLivreVirtual + " KB");
         System.out.println("- Memória Virtual Ocupada: " + kbOcupadoVirtual + " KB");
 
-        // Pausa para visualização e leitura do estado atual da memória e dados adicionais
+        // Pausa de 3s para visualização e leitura do estado atual da memória e dados adicionais
         if(modoExibicao.equals("continuo")){
             try {
                 Thread.sleep(3000);
