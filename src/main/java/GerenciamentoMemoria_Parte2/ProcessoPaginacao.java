@@ -30,13 +30,24 @@ public class ProcessoPaginacao {
         Random rand = new Random();
         boolean aleatorio = tipoRefenciaPaginas.equals("Aleatório");
 
-        // Gera referências para simular execução contínua
-        for (int i = 0; i < numPaginas; i++) {
+        // Gerando um acréscimo aleatório de 0 a numPaginas de páginas que serão referenciadas (acessadas)
+        int acrescimoReferencias = rand.nextInt(numPaginas + 1);
+        int numReferencias = numPaginas + acrescimoReferencias;
+
+        // Gerando referências para simular uma execução de um processo
+        for (int i = 0; i < numReferencias; i++) {
             if (aleatorio) {
                 referenciasPaginas.add(rand.nextInt(numPaginas));
             } else {
                 referenciasPaginas.add(i % numPaginas); // FIFO circular
             }
+        }
+    }
+
+    public void imprimirReferencias() {
+        System.out.println("\nOrdem das páginas a serem referenciadas do processo " + nome + ':');
+        for (int i = 0; i < referenciasPaginas.size(); i++) {
+            System.out.println((i + 1) + " - Página " + (referenciasPaginas.get(i) + 1));
         }
     }
 

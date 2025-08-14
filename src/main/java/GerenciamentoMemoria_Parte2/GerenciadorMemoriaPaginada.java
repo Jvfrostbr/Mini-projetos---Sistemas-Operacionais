@@ -49,8 +49,11 @@ public class GerenciadorMemoriaPaginada {
 
         int paginasFisicasAlocadas = 0;
         for (int i = 0; i < paginasNecessarias; i++) {
-            PaginaFisica paginaFisica = new PaginaFisica(i + 1 + "PgF | " + processo.getNome(), processo.getId(), i);
-            PaginaVirtual paginaVirtual = new PaginaVirtual(i + 1 + "PgV | " + processo.getNome(), processo.getId(), i);
+            // Formata o número da página com 2 dígitos (ex: 01, 02, ..., 15)
+            String numeroPagina = String.format("%02d", i + 1);
+
+            PaginaFisica paginaFisica = new PaginaFisica(numeroPagina + "PágF | " + processo.getNome(), processo.getId(), i);
+            PaginaVirtual paginaVirtual = new PaginaVirtual(numeroPagina + "PágV | " + processo.getNome(), processo.getId(), i);
 
             boolean alocada = false;
 
@@ -110,9 +113,12 @@ public class GerenciadorMemoriaPaginada {
 
     public void executarSimulacao(String algoritmo) {
         for (ProcessoPaginacao processo : filaProcessos) {
-
-            // Listando as páginas físicas e a ordem das páginas a serem referenciadas:
             List<Integer> referencias = processo.getReferenciasPaginas();
+            processo.imprimirReferencias();
+
+            System.out.println("Digite enter para iniciar a simulação do processo " + processo.getNome() + ':');
+            Scanner scanner = new Scanner(System.in);
+            scanner.nextLine();   // Para consumir o enter digitado
 
             for (int indicePaginaReferenciada : referencias) {
                 Pagina paginaEncontrada = ProcurarPaginaNaMemoria(indicePaginaReferenciada, processo.getId(), memoriaFisica);
@@ -151,17 +157,20 @@ public class GerenciadorMemoriaPaginada {
                     }
                 }
                 else{
+                    pageHit++;
                     PaginaFisica paginaFisica = (PaginaFisica) paginaEncontrada;
                     exibirEstadoMemoria(processo, null, null, algoritmo, paginaFisica);
                     paginaFisica.setBitUso(true);
-                    pageHit++;
                 }
             }
             // Quando a ordem de referências de um processo terminar
             desalocarPaginasDoProcesso(processo);
+            System.out.println("\n----- SIMULAÇÃO DO PROCESSO " + processo.getNome() + " ENCERRADA ----");
         }
 
         System.out.println("\nSimulação concluída! Total de page misses: " + pageMisses);
+        pageHit = 0;
+        pageMisses = 0;
     }
 
 
@@ -301,13 +310,13 @@ public class GerenciadorMemoriaPaginada {
 
     private void exibirEstadoMemoria(ProcessoPaginacao processoAtual, PaginaFisica paginaFisicaRemovida, PaginaFisica paginaFisicaAdicionada, String algoritmo, PaginaFisica paginaFisicaAcessada) {
         limparTela();
-        System.out.println("========== ESTADO ATUAL DA MEMÓRIA ==========\n");
+        System.out.println("\n========== ESTADO ATUAL DA MEMÓRIA ==========\n");
 
         //Exibição do estado atual das memórias fisica e vitual
-        System.out.println("----- Memória Física -----");
-        exibirMatrizMemoria(memoriaFisica, 10);
-        System.out.println("\n----- Memória Virtual -----");
-        exibirMatrizMemoria(memoriaVirtual, 10);
+        System.out.println("------------ MEMÓRIA FÍSICA ------------");
+        exibirMatrizMemoria(memoriaFisica, 9);
+        System.out.println("\n------------ MEMÓRIA VIRTUAL ------------");
+        exibirMatrizMemoria(memoriaVirtual, 9);
 
         // Exibição de infos adicionais dos processos e paginas
         System.out.println("\n- Processo em execução: " + processoAtual.getNome());
@@ -316,24 +325,7 @@ public class GerenciadorMemoriaPaginada {
         System.out.println("- Página adicionada à memória física: " + (paginaFisicaAdicionada != null ? paginaFisicaAdicionada.getNome() : "Nenhuma"));
         System.out.println("- Total de Page Misses: " + pageMisses);
         System.out.println("- Total de Page hit: " + pageHit);
-        System.out.println("- Algoritmo selecionado: " + algoritmo);
-
-        // Calculando informações adicionais das memórias
-        int paginasLivresFisica = contarPaginasLivres(memoriaFisica);
-        int paginasOcupadasFisica = memoriaFisica.length - paginasLivresFisica;
-        int paginasLivresVirtual = contarPaginasLivres(memoriaVirtual);
-        int paginasOcupadasVirtual = memoriaVirtual.length - paginasLivresVirtual;
-
-        int kbLivreFisica = paginasLivresFisica * tamanhoPagina;
-        int kbOcupadoFisica = paginasOcupadasFisica * tamanhoPagina;
-        int kbLivreVirtual = paginasLivresVirtual * tamanhoPagina;
-        int kbOcupadoVirtual = paginasOcupadasVirtual * tamanhoPagina;
-
-        // Impressão das informações adicionais
-        System.out.println("- Memória Física Livre: " + kbLivreFisica + " KB");
-        System.out.println("- Memória Física Ocupada: " + kbOcupadoFisica + " KB");
-        System.out.println("- Memória Virtual Livre: " + kbLivreVirtual + " KB");
-        System.out.println("- Memória Virtual Ocupada: " + kbOcupadoVirtual + " KB");
+        System.out.println("- Algoritmo utilizado: " + (paginaFisicaRemovida != null? algoritmo : "Nenhum"));
 
         // Pausa de 3s para visualização e leitura do estado atual da memória e dados adicionais
         if(modoExibicao.equals("continuo")){
@@ -377,10 +369,10 @@ public class GerenciadorMemoriaPaginada {
                 id = pv.getNome();
             }
             else {
-                id = " - ";
+                id = "    ----    ";
             }
 
-            System.out.printf("[%10s] ", id);
+            System.out.printf("[%12s] ", id);
 
             if ((i + 1) % colunas == 0 || i == memoria.length - 1) {
                 System.out.println();
