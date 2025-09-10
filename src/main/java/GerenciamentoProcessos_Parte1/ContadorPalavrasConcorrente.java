@@ -16,7 +16,7 @@ public class ContadorPalavrasConcorrente {
     public final Mutex lockTextoCompleto;
     public final Mutex lockMapa;
 
-    public static String caminhoArquivo = "prática - gerenciamento de processos/src/main/java/GerenciamentoProcessos_Parte1/biblia-em-txt.txt";
+    public static String caminhoArquivo = "src/main/java/GerenciamentoProcessos_Parte1/biblia-em-txt.txt";
 
     // CONSTRUTOR
     private ContadorPalavrasConcorrente() {
